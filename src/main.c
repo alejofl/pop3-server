@@ -71,7 +71,6 @@ static int setup_socket(char * ip, unsigned long port) {
     setsockopt(server, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
 
     if (bind(server, (struct sockaddr *) address, address_length) < 0) {
-        printf("%d\n", errno);
         return -1;
     }
 

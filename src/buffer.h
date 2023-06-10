@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <unistd.h>  // size_t, ssize_t
+#include <stdint.h>
 
 /**
  * buffer.c - buffer con acceso directo (útil para I/O) que mantiene
@@ -27,7 +28,9 @@
  * Se quiere escribir en el bufer cuatro bytes.
  *
  * ptr + 0 <- buffer_write_ptr(b, &wbytes), wbytes=6
+ *  Con esto de aca abajo lo que hacemos es tomar lo de FD y pegarlo en ptr
  * n = read(fd, ptr, wbytes)
+ * Esto hace que el puntero W avance 4
  * buffer_write_adv(b, n = 4)
  *
  * R=0
@@ -40,6 +43,7 @@
  *
  * Quiero leer 3 del buffer
  * ptr + 0 <- buffer_read_ptr, wbytes=4
+ * donde guardo lo que lei porque lo lei pero no se donde lo guardo
  * buffer_read_adv(b, 3);
  *
  *            R=3
