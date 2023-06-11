@@ -10,6 +10,12 @@ static void handle_read(struct selector_key * key);
 static void handle_write(struct selector_key * key);
 static void handle_close(struct selector_key * key);
 
+const struct fd_handler handler = {
+        .handle_read       = handle_read,
+        .handle_write      = handle_write,
+        .handle_close      = handle_close, // nada que liberar
+};
+
 void accept_pop_connection(struct selector_key * key) {
     struct sockaddr client_address;
     socklen_t client_address_length = sizeof(client_address);
@@ -20,12 +26,6 @@ void accept_pop_connection(struct selector_key * key) {
     char * buff = calloc(BUFFER_SIZE, 1);
 
     buffer_init(buffer, BUFFER_SIZE, (uint8_t *) buff);
-
-    const struct fd_handler handler = {
-            .handle_read       = handle_read,
-            .handle_write      = handle_write,
-            .handle_close      = handle_close, // nada que liberar
-    };
 
     selector_register(key->s, new_socket_fd, &handler, OP_READ, buffer);
 }
