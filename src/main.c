@@ -6,11 +6,8 @@
 #include <signal.h>
 
 #include <unistd.h>
-#include <sys/types.h>   // socket
 #include <sys/socket.h>  // socket
 #include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <arpa/inet.h>
 
 #include "constants.h"
 #include "pop3.h"
@@ -23,45 +20,17 @@ static void sigterm_handler(const int signal) {
     terminated = true;
 }
 
-static int setup_socket(char * ip, unsigned long port) {
+static int setup_ipv4_socket(unsigned long port) {
     // Storage for socket address
-    struct sockaddr_storage * address;
-    socklen_t address_length;
+    struct sockaddr_in address;
+    socklen_t address_length = sizeof(address);
 
-    bool is_ipv6 = strchr(ip, ':') != NULL;
+    memset(&address, 0, address_length);
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = htonl(INADDR_ANY);
+    address.sin_port = htons(port);
 
-    struct sockaddr_in6 sock6;
-    struct sockaddr_in sock4;
-
-    if (is_ipv6) {
-        memset(&sock6, 0, sizeof(sock6));
-
-        sock6.sin6_family = AF_INET6;
-        sock6.sin6_addr = in6addr_any;
-        sock6.sin6_port = htons(port);
-        if (inet_pton(AF_INET6, ip, &sock6.sin6_addr) != 1) {
-            return -1;
-        }
-
-        address = (struct sockaddr_storage *) &sock6;
-        address_length = sizeof(struct sockaddr_in6);
-    } else {
-        memset(&sock4, 0, sizeof(sock4));
-
-        sock4.sin_family = AF_INET;
-        sock4.sin_addr.s_addr = INADDR_ANY;
-        sock4.sin_port = htons(port);
-
-        if (inet_pton(AF_INET, ip, &sock4.sin_addr) != 1) {
-
-            return -1;
-        }
-
-        address = (struct sockaddr_storage *) &sock4;
-        address_length = sizeof(struct sockaddr_in);
-    }
-
-    int server = socket((*address).ss_family, SOCK_STREAM, IPPROTO_TCP);
+    int server = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     if (server < 0) {
         return -1;
@@ -70,7 +39,7 @@ static int setup_socket(char * ip, unsigned long port) {
     // man 7 ip
     setsockopt(server, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
 
-    if (bind(server, (struct sockaddr *) address, address_length) < 0) {
+    if (bind(server, (struct sockaddr *) &address, address_length) < 0) {
         return -1;
     }
 
@@ -81,12 +50,41 @@ static int setup_socket(char * ip, unsigned long port) {
     return 0;
 }
 
+static int setup_ipv6_socket(unsigned long port) {
+    // Storage for socket address
+//    struct sockaddr_in6 address;
+//    socklen_t address_length = sizeof(address);
+//
+//    memset(&address, 0, address_length);
+//    address.sin6_family = AF_INET6;
+//    address.sin6_addr = in6addr_any;
+//    address.sin6_port = htons(port);
+//
+//    int server = socket(IPV6_V6ONLY, SOCK_STREAM, IPPROTO_TCP);
+//
+//    if (server < 0) {
+//        return -1;
+//    }
+//
+//    // man 7 ip
+//    setsockopt(server, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
+//
+//    if (bind(server, (struct sockaddr *) &address, address_length) < 0) {
+//        return -1;
+//    }
+//
+//    if (listen(server, MAX_QUEUED_CONNECTIONS) < 0) {
+//        return -1;
+//    }
+
+    return 0;
+}
+
 int main(int argc, char** argv) {
     close(STDIN_FILENO);
     char * error_message = NULL;
 
     unsigned long port = 62511;
-    char * ip = "127.0.0.1";
 
     // Registering signals to de-allocate resources
     signal(SIGTERM, sigterm_handler);
@@ -112,27 +110,35 @@ int main(int argc, char** argv) {
     }
     // TODO END
 
+    int ipv4_socket;
+    int ipv6_socket = -1;
+    selector_status ss = SELECTOR_SUCCESS;
+    fd_selector selector = NULL;
 
     // Initialize the server socket
-    int server_socket = setup_socket(ip, port);
-
-    if (server_socket < 0) {
-        error_message = "Failed to initialize server socket";
+    ipv4_socket = setup_ipv4_socket(port);
+    if (ipv4_socket < 0) {
+        error_message = "Failed to initialize IPv4 server socket";
         goto finally;
     }
+//    ipv6_socket = setup_ipv6_socket(port);
+//    if (ipv6_socket < 0) {
+//        error_message = "Failed to initialize IPv6 server socket";
+//        goto finally;
+//    }
 
     // Initialize selector
     struct selector_init init_data = {
             .signal = SIGALRM,
             .select_timeout = { .tv_sec = 100, .tv_nsec = 0 }
     };
-    selector_status ss = selector_init(&init_data);
+    ss = selector_init(&init_data);
     if (ss != SELECTOR_SUCCESS) {
         error_message = "Failed to initialize selector";
         goto finally;
     }
 
-    fd_selector selector = selector_new(MAX_CONCURRENT_CONNECTIONS);
+    selector = selector_new(MAX_CONCURRENT_CONNECTIONS);
     if (selector == NULL) {
         error_message = "Failed to create selector";
         goto finally;
@@ -140,17 +146,22 @@ int main(int argc, char** argv) {
 
     // Register the server socket to the selector
     fd_handler server_handler = {
-            .handle_read = accept_pop_connection, // TODO
+            .handle_read = accept_pop_connection,
             .handle_write = NULL,
             .handle_block = NULL,
             .handle_close = NULL
     };
 
-    ss = selector_register(selector, server_socket, &server_handler, OP_READ, NULL);
+    ss = selector_register(selector, ipv4_socket, &server_handler, OP_READ, NULL);
     if (ss != SELECTOR_SUCCESS) {
-        error_message = "Failed to register server socket in selector";
+        error_message = "Failed to register IPv4 server socket in selector";
         goto finally;
     }
+//    ss = selector_register(selector, ipv6_socket, &server_handler, OP_READ, NULL);
+//    if (ss != SELECTOR_SUCCESS) {
+//        error_message = "Failed to register IPv6 server socket in selector";
+//        goto finally;
+//    }
 
     // Main server loop
     while (!terminated) {
@@ -177,9 +188,12 @@ int main(int argc, char** argv) {
         }
         selector_close();
 
-        if (server_socket >= 0) {
-            close(server_socket);
+        if (ipv4_socket >= 0) {
+            close(ipv4_socket);
         }
+//        if (ipv6_socket >= 0) {
+//            close(ipv6_socket);
+//        }
 
     return ret;
 }

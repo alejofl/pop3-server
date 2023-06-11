@@ -1,7 +1,6 @@
 #include <sys/socket.h>
-#include <unistd.h>
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "buffer.h"
 #include "constants.h"
 #include "pop3.h"
@@ -11,9 +10,9 @@ static void handle_write(struct selector_key * key);
 static void handle_close(struct selector_key * key);
 
 const struct fd_handler handler = {
-        .handle_read       = handle_read,
-        .handle_write      = handle_write,
-        .handle_close      = handle_close, // nada que liberar
+        .handle_read  = handle_read,
+        .handle_write = handle_write,
+        .handle_close = handle_close,
 };
 
 void accept_pop_connection(struct selector_key * key) {
@@ -31,29 +30,34 @@ void accept_pop_connection(struct selector_key * key) {
 }
 
 static void handle_read(struct selector_key * key) {
-    printf("I'm going to read.\n");
     buffer * buff = (buffer *) key->data;
     size_t write_bytes;
     char * ptr = (char *) buffer_write_ptr(buff, &write_bytes);
-    int n = read(key->fd, ptr, write_bytes);
-    printf("El n es %d\n", n);
+    ssize_t n = recv(key->fd, ptr, write_bytes, 0);
+    if (n <= 0) {
+        selector_unregister_fd(key->s, key->fd);
+        return;
+    }
     buffer_write_adv(buff, n);
-    printf("Pase el write advanced\n");
-
     selector_set_interest_key(key, OP_WRITE);
-    printf("Pase el interest\n");
 }
 
 static void handle_write(struct selector_key * key) {
-    printf("I'm going to write.\n");
+    printf("feirojfierjgir\n");
     buffer * buff = (buffer *) key->data;
     size_t read_bytes;
     char * ptr = (char *) buffer_read_ptr(buff, &read_bytes);
-    int n = write(key->fd, ptr, read_bytes);
+    ssize_t n = send(key->fd, ptr, read_bytes, 0);
+    if (n == -1) {
+        selector_unregister_fd(key->s, key->fd);
+        return;
+    }
     buffer_read_adv(buff, n);
     selector_set_interest_key(key, OP_READ);
 }
 
 static void handle_close(struct selector_key * key) {
-    printf("Closed.\n");
+    buffer * buff = (buffer *) key->data;
+    free(buff->data);
+    free(buff);
 }
