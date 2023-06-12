@@ -2,7 +2,9 @@ CFLAGS=-g -Wall -Wextra -pedantic -pedantic-errors -O3 -std=c11 -D_POSIX_C_SOURC
 
 LDFLAGS=
 
-SOURCES=$(wildcard src/*.c)
+LIB_HEADERS=src/lib/include
+
+SOURCES=$(wildcard src/lib/*.c) $(wildcard src/*.c)
 
 OBJECTS=$(SOURCES:src/%.c=obj/%.o)
 
@@ -17,11 +19,11 @@ server: $(OUTPUT_FILE)
 
 $(OUTPUT_FILE): $(OBJECTS)
 	mkdir -p $(@D)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJECTS) -o $(OUTPUT_FILE)
+	$(CC) $(CFLAGS) -I$(LIB_HEADERS) $(LDFLAGS) $(OBJECTS) -o $(OUTPUT_FILE)
 
 obj/%.o: src/%.c
 	mkdir -p $(@D)
-	$(CC) $(GCCFLAGS) -c $< -o $@
+	$(CC) -I$(LIB_HEADERS) -c $< -o $@
 
 clean:
 	rm -rf $(OUTPUT_FOLDER)
