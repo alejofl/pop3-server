@@ -20,7 +20,6 @@ stm_init(struct state_machine *stm) {
     if(stm->initial < stm->max_state) {
         stm->current = NULL;
     } else {
-        printf("ERROR INITIAL");
         abort();
     }
 }

@@ -23,7 +23,7 @@ $(OUTPUT_FILE): $(OBJECTS)
 
 obj/%.o: src/%.c
 	mkdir -p $(@D)
-	$(CC) -I$(LIB_HEADERS) -c $< -o $@
+	$(CC) -g -I$(LIB_HEADERS) -c $< -o $@
 
 clean:
 	rm -rf $(OUTPUT_FOLDER)

@@ -124,9 +124,7 @@ void accept_pop_connection(struct selector_key * key) {
 }
 
 static void handle_read(struct selector_key * key) {
-    connection_data connection = (connection_data) key->data;
-    struct state_machine stm = connection->stm;
-    stm_handler_read(&stm, key);
+    stm_handler_read(&((connection_data) key->data)->stm, key);
 }
 
 static void handle_write(struct selector_key * key) {

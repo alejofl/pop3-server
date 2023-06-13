@@ -3,6 +3,20 @@
 
 #include <selector.h>
 #include "constants.h"
+#include "pop3.h"
+
+typedef enum {
+    EMPTY,
+    OPTIONAL,
+    REQUIRED
+} argument_type;
+
+struct pop3_command {
+    char * command;
+    argument_type argument_1_type;
+    argument_type argument_2_type;
+    stm_states (* handler)(connection_data data);
+};
 
 void stm_authorization_arrival(stm_states state, struct selector_key * key);
 void stm_authorization_departure(stm_states state, struct selector_key * key);
