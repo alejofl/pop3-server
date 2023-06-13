@@ -58,8 +58,6 @@ parser_feed(struct parser *p, const uint8_t c) {
     const size_t n                              = p->def->states_n[p->state];
     bool matched   = false;
 
-    printf("Antes del for\n");
-
     for(unsigned i = 0; i < n ; i++) {
         const int when = state[i].when;
         if (state[i].when <= 0xFF) {
@@ -72,6 +70,7 @@ parser_feed(struct parser *p, const uint8_t c) {
             matched = false;
         }
 
+        // Aca lo que hago es ejecutar la funcion relacionada al caracter que te toco.
         if(matched) {
             state[i].act1(&p->e1, c);
             if(state[i].act2 != NULL) {
