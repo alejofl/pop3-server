@@ -18,7 +18,7 @@ stm_states authorization_capa(connection_data connection) {
 
 stm_states authorization_quit(connection_data connection) {
     printf("AUHTORIZATION QUIT\n");
-    return AUTHORIZATION;
+    return QUIT;
 }
 
 stm_states transaction_stat(connection_data connection) {
@@ -63,5 +63,5 @@ stm_states transaction_capa(connection_data connection) {
 
 stm_states transaction_quit(connection_data connection) {
     printf("TRANSACTION QUIT\n");
-    return AUTHORIZATION;
+    return QUIT;
 }

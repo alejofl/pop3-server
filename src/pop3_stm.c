@@ -22,7 +22,7 @@ struct pop3_command transaction_commands[] = {
         {.command = "RSET", .argument_1_type = EMPTY, .argument_2_type = EMPTY, .handler = transaction_rset},
         {.command = "TOP", .argument_1_type = REQUIRED, .argument_2_type = REQUIRED, .handler = transaction_top},
         {.command = "CAPA", .argument_1_type = EMPTY, .argument_2_type = EMPTY, .handler = transaction_capa},
-        {.command = "QUIT", .argument_1_type = REQUIRED, .argument_2_type = REQUIRED, .handler = transaction_quit},
+        {.command = "QUIT", .argument_1_type = EMPTY, .argument_2_type = EMPTY, .handler = transaction_quit},
 };
 
 struct pop3_command * pop3_commands[] = {
@@ -35,16 +35,21 @@ size_t pop3_commands_length[] = {
         sizeof(transaction_commands) / sizeof(transaction_commands[0])
 };
 
-stm_states read_command(struct selector_key * key, stm_states next_state, bool read_from_socket) {
+stm_states read_command(struct selector_key * key, stm_states current_state, bool read_from_socket) {
     connection_data connection = (connection_data) key->data;
+    char * ptr;
 
     // TODO we may need to use de read_from_socket flag.
-
-    size_t write_bytes;
-    char * ptr = (char *) buffer_write_ptr(&connection->buffer_object, &write_bytes);
-    ssize_t n = recv(key->fd, ptr, write_bytes, 0);
-
-    buffer_write_adv(&connection->buffer_object, n);
+    // TODO check if this work with wrtiting.
+    if (!buffer_can_read(&connection->buffer_object)) {
+        size_t write_bytes;
+        ptr = (char *) buffer_write_ptr(&connection->buffer_object, &write_bytes);
+        ssize_t n = recv(key->fd, ptr, write_bytes, 0);
+        if (n == 0) {
+            return QUIT;
+        }
+        buffer_write_adv(&connection->buffer_object, n);
+    }
 
     size_t read_bytes;
     ptr = (char *) buffer_read_ptr(&connection->buffer_object, &read_bytes);
@@ -62,8 +67,8 @@ stm_states read_command(struct selector_key * key, stm_states next_state, bool r
 
         if (event->type == VALID_COMMAND) {
             printf("Command: %s\nArgument 1: %s\nArgument 2: %s\n", connection->current_command.command, connection->current_command.argument_1, connection->current_command.argument_2);
-            for (int j = 0; j < pop3_commands_length[next_state]; j++) {
-                struct pop3_command maybe_command = pop3_commands[next_state][j];
+            for (int j = 0; j < pop3_commands_length[current_state]; j++) {
+                struct pop3_command maybe_command = pop3_commands[current_state][j];
                 if (strcmp(maybe_command.command, connection->current_command.command) == 0) {
                     if ((maybe_command.argument_1_type == REQUIRED && connection->current_command.argument_1_length > 0) ||
                         (maybe_command.argument_1_type == EMPTY && connection->current_command.argument_1_length == 0) ||
@@ -71,9 +76,7 @@ stm_states read_command(struct selector_key * key, stm_states next_state, bool r
                         if ((maybe_command.argument_2_type == REQUIRED && connection->current_command.argument_2_length > 0) ||
                             (maybe_command.argument_2_type == EMPTY && connection->current_command.argument_2_length == 0) ||
                             (maybe_command.argument_2_type == OPTIONAL)) {
-                            stm_states sig_estado = maybe_command.handler(connection);
-                            printf("El siguiente estado es %d\n", sig_estado);
-                            return sig_estado;
+                            return maybe_command.handler(connection);
                         } else {
                             printf("ERROR EN ARGUMENT 2\n");
                             return ERROR;
@@ -92,7 +95,7 @@ stm_states read_command(struct selector_key * key, stm_states next_state, bool r
         }
     }
 
-    return next_state;
+    return current_state;
 }
 
 void stm_authorization_arrival(stm_states state, struct selector_key * key) {
