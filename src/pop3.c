@@ -120,6 +120,7 @@ void accept_pop_connection(struct selector_key * key) {
     if (selector_register(key->s, new_socket_fd, &handler, OP_READ, connection) != SELECTOR_SUCCESS) {
         parser_destroy(connection->parser);
         free(connection);
+        close(new_socket_fd);
     }
 }
 
@@ -144,4 +145,5 @@ static void handle_close(struct selector_key * key) {
     connection_data connection = (connection_data) key->data;
     parser_destroy(connection->parser);
     free(connection);
+    close(key->fd);
 }
