@@ -8,6 +8,10 @@
 #define MAX_QUEUED_CONNECTIONS 32
 #define BUFFER_SIZE 512
 
+#define COMMAND_LENGTH 4
+#define MIN_COMMAND_LENGTH 3
+#define ARGUMENT_LENGTH 254
+
 typedef enum {
     AUTHORIZATION = 0,
     TRANSACTION = 1,

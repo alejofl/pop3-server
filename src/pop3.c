@@ -68,12 +68,12 @@ static const struct parser_state_transition parser_argument_1_state[] = {
 };
 
 static const struct parser_state_transition parser_argument_2_state[] = {
-        {.when = '\r', .dest = END, .act1 = parser_argument_2_state_space},
+        {.when = '\r', .dest = END, .act1 = parser_argument_2_state_carriage_return},
         {.when = ANY, .dest = ARGUMENT_2, .act1 = parser_argument_2_state_any}
 };
 
 static const struct parser_state_transition parser_end_state[] = {
-        {.when = '\n', .dest = INITIAL, .act1 = parser_end_state_space},
+        {.when = '\n', .dest = INITIAL, .act1 = parser_end_state_line_feed},
         {.when = ANY, .dest = INITIAL, .act1 = parser_end_state_any}
 };
 

@@ -18,7 +18,7 @@ stm_states read_command(struct selector_key * key, stm_states next_state, bool r
     ptr = (char *) buffer_read_ptr(&connection->buffer_object, &read_bytes);
 
     for (int i = 0; i < read_bytes; i++) {
-        const struct parser_event * event = parser_feed(connection->parser, ptr[i]);
+        const struct parser_event * event = parser_feed(connection->parser, ptr[i], connection);
         buffer_read_adv(&connection->buffer_object, 1);
         printf("Evento de tipo %d", event->type);
     }
