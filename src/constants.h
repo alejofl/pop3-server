@@ -2,7 +2,6 @@
 #define CONSTANTS_H
 
 #include <stm.h>
-#include <parser.h>
 
 #define MAX_CONCURRENT_CONNECTIONS 1024
 #define MAX_QUEUED_CONNECTIONS 32
@@ -22,8 +21,7 @@ typedef enum {
 } stm_states;
 
 typedef enum {
-    INITIAL = 0,
-    COMMAND,
+    COMMAND = 0,
     ARGUMENT_1,
     ARGUMENT_2,
     END,
@@ -35,7 +33,5 @@ typedef enum {
     VALID_COMMAND,
     INVALID_COMMAND
 } parser_event_types;
-
-static const struct parser_definition parser_definition;
 
 #endif

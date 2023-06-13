@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "pop3_stm.h"
 #include "pop3.h"
+#include <parser.h>
 
 stm_states read_command(struct selector_key * key, stm_states next_state, bool read_from_socket) {
     connection_data connection = (connection_data) key->data;
@@ -17,18 +18,21 @@ stm_states read_command(struct selector_key * key, stm_states next_state, bool r
     size_t read_bytes;
     ptr = (char *) buffer_read_ptr(&connection->buffer_object, &read_bytes);
 
+    connection->current_command.command[0] = '\0';
     connection->current_command.command_length = 0;
+    connection->current_command.argument_1[0] = '\0';
     connection->current_command.argument_1_length = 0;
+    connection->current_command.argument_2[0] = '\0';
     connection->current_command.argument_2_length = 0;
+
     for (int i = 0; i < read_bytes; i++) {
         const struct parser_event * event = parser_feed(connection->parser, ptr[i], connection);
         buffer_read_adv(&connection->buffer_object, 1);
 
-        printf("Evento de tipo %d", event->type);
-
         if (event->type == VALID_COMMAND) {
-
+            printf("Command: %s\nArgument 1: %s\nArgument 2: %s\n", connection->current_command.command, connection->current_command.argument_1, connection->current_command.argument_2);
         } else if (event->type == INVALID_COMMAND) {
+            printf("ERRORRRRR\n");
             return ERROR;
         }
     }

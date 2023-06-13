@@ -53,17 +53,15 @@ struct state_definition stm_states_table[] = {
         }
 };
 
-static const struct parser_state_transition parser_initial_state[] = {
-        {.when = ANY, .dest = COMMAND, .act1 = parser_initial_state_any}
-};
-
 static const struct parser_state_transition parser_command_state[] = {
-        {.when = ' ', .dest = ARGUMENT_1, .act1 = parser_command_state_any},
-        {.when = ANY, .dest = COMMAND, .act1 = parser_command_state_space}
+        {.when = ' ', .dest = ARGUMENT_1, .act1 = parser_command_state_space},
+        {.when = '\r', .dest = END, .act1 = parser_command_state_carriage_return},
+        {.when = ANY, .dest = COMMAND, .act1 = parser_command_state_any}
 };
 
 static const struct parser_state_transition parser_argument_1_state[] = {
         {.when = ' ', .dest = ARGUMENT_2, .act1 = parser_argument_1_state_space},
+        {.when = '\r', .dest = END, .act1 = parser_argument_1_state_carriage_return},
         {.when = ANY, .dest = ARGUMENT_1, .act1 = parser_argument_1_state_any}
 };
 
@@ -73,12 +71,11 @@ static const struct parser_state_transition parser_argument_2_state[] = {
 };
 
 static const struct parser_state_transition parser_end_state[] = {
-        {.when = '\n', .dest = INITIAL, .act1 = parser_end_state_line_feed},
-        {.when = ANY, .dest = INITIAL, .act1 = parser_end_state_any}
+        {.when = '\n', .dest = COMMAND, .act1 = parser_end_state_line_feed},
+        {.when = ANY, .dest = COMMAND, .act1 = parser_end_state_any}
 };
 
 static const struct parser_state_transition * parser_state_table[] = {
-        parser_initial_state,
         parser_command_state,
         parser_argument_1_state,
         parser_argument_2_state,
@@ -86,7 +83,6 @@ static const struct parser_state_transition * parser_state_table[] = {
 };
 
 static const size_t parser_state_n[] = {
-        sizeof(parser_initial_state) / sizeof(parser_initial_state[0]),
         sizeof(parser_command_state) / sizeof(parser_command_state[0]),
         sizeof(parser_argument_1_state) / sizeof(parser_argument_1_state[0]),
         sizeof(parser_argument_2_state) / sizeof(parser_argument_2_state[0]),
@@ -96,7 +92,7 @@ static const size_t parser_state_n[] = {
 static const struct parser_definition parser_definition = {
         .states = parser_state_table,
         .states_count = PARSER_STATES_COUNT,
-        .start_state = INITIAL,
+        .start_state = COMMAND,
         .states_n = parser_state_n
 };
 

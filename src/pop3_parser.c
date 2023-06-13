@@ -4,12 +4,13 @@
 #include "pop3_parser.h"
 
 void parser_initial_state_any(struct parser_event * ret, const uint8_t c, connection_data connection) {
+    printf("Estoy en el estado inicial\n");
     ret->type = UNDEFINED;
 }
 
 void parser_command_state_any(struct parser_event * ret, const uint8_t c, connection_data connection) {
-    printf("Me llegó una %c\n", c);
-    if (connection->current_command.command_length > COMMAND_LENGTH) {
+    printf("Me llegó el estado command\nMe llegó una %c\n", c);
+    if (connection->current_command.command_length + 1 > COMMAND_LENGTH) {
         ret->type = INVALID_COMMAND;
         return;
     }
@@ -28,18 +29,28 @@ void parser_command_state_space(struct parser_event * ret, const uint8_t c, conn
     printf("Terminó el comando\n");
 }
 
+void parser_command_state_carriage_return(struct parser_event * ret, uint8_t c, connection_data connection) {
+    if (connection->current_command.command_length < MIN_COMMAND_LENGTH) {
+        ret->type = INVALID_COMMAND;
+        return;
+    }
+    connection->current_command.command[connection->current_command.command_length] = '\0';
+    ret->type = UNDEFINED;
+    printf("Terminó el comando\n");
+}
+
 void parser_argument_1_state_space(struct parser_event * ret, uint8_t c, connection_data connection) {
     if (connection->current_command.command_length < 0) {
         ret->type = INVALID_COMMAND;
         return;
     }
-    connection->current_command.command[connection->current_command.argument_1_length] = '\0';
+    connection->current_command.argument_1[connection->current_command.argument_1_length] = '\0';
     ret->type = UNDEFINED;
     printf("Terminó el argumento 1\n");
 }
 
 void parser_argument_1_state_any(struct parser_event * ret, uint8_t c, connection_data connection) {
-    printf("Me llegó una %c\n", c);
+    printf("Me llegó el estado argument 1\nMe llegó una %c\n", c);
     if (connection->current_command.argument_1_length > ARGUMENT_LENGTH) {
         ret->type = INVALID_COMMAND;
         return;
@@ -49,18 +60,28 @@ void parser_argument_1_state_any(struct parser_event * ret, uint8_t c, connectio
     connection->current_command.argument_1_length++;
 }
 
-void parser_argument_2_state_carriage_return(struct parser_event * ret, uint8_t c, connection_data connection) {
+void parser_argument_1_state_carriage_return(struct parser_event * ret, uint8_t c, connection_data connection) {
     if (connection->current_command.command_length < 0) {
         ret->type = INVALID_COMMAND;
         return;
     }
-    connection->current_command.command[connection->current_command.argument_2_length] = '\0';
+    connection->current_command.argument_1[connection->current_command.argument_1_length] = '\0';
+    ret->type = UNDEFINED;
+    printf("Terminó el argumento 1\n");
+}
+
+void parser_argument_2_state_carriage_return(struct parser_event * ret, uint8_t c, connection_data connection) {
+    if (connection->current_command.argument_2_length < 0) {
+        ret->type = INVALID_COMMAND;
+        return;
+    }
+    connection->current_command.argument_2[connection->current_command.argument_2_length] = '\0';
     ret->type = UNDEFINED;
     printf("Terminó el argumento 2\n");
 }
 
 void parser_argument_2_state_any(struct parser_event * ret, uint8_t c, connection_data connection) {
-    printf("Me llegó una %c\n", c);
+    printf("Me llegó el estado arg 2\nMe llegó una %c\n", c);
     if (connection->current_command.argument_2_length > ARGUMENT_LENGTH) {
         ret->type = INVALID_COMMAND;
         return;
