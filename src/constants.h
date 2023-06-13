@@ -14,11 +14,11 @@
 
 typedef enum {
     AUTHORIZATION = 0,
-    TRANSACTION = 1,
-    UPDATE = 2,
-    ERROR = 3,
-    QUIT = 4,
-    STM_STATES_COUNT = 5
+    TRANSACTION,
+    UPDATE,
+    ERROR,
+    QUIT,
+    STM_STATES_COUNT
 } stm_states;
 
 typedef enum {

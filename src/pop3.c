@@ -18,38 +18,38 @@ static void handle_close(struct selector_key * key);
 struct state_definition stm_states_table[] = {
         {
                 .state = AUTHORIZATION,
-                .on_arrival = NULL,
-                .on_departure = NULL,
+                .on_arrival = stm_authorization_arrival,
+                .on_departure = stm_authorization_departure,
                 .on_read_ready = stm_authorization_read,
-                .on_write_ready = NULL
+                .on_write_ready = stm_authorization_write
         },
         {
                 .state = TRANSACTION,
-                .on_arrival = NULL,
-                .on_departure = NULL,
-                .on_read_ready = NULL,
-                .on_write_ready = NULL
+                .on_arrival = stm_transaction_arrival,
+                .on_departure = stm_transaction_departure,
+                .on_read_ready = stm_transaction_read,
+                .on_write_ready = stm_transaction_write
         },
         {
                 .state = UPDATE,
-                .on_arrival = NULL,
-                .on_departure = NULL,
-                .on_read_ready = NULL,
-                .on_write_ready = NULL
+                .on_arrival = stm_update_arrival,
+                .on_departure = stm_update_departure,
+                .on_read_ready = stm_update_read,
+                .on_write_ready = stm_update_write
         },
         {
                 .state = ERROR,
-                .on_arrival = NULL,
-                .on_departure = NULL,
-                .on_read_ready = NULL,
-                .on_write_ready = NULL
+                .on_arrival = stm_error_arrival,
+                .on_departure = stm_error_departure,
+                .on_read_ready = stm_error_read,
+                .on_write_ready = stm_error_write
         },
         {
                 .state = QUIT,
                 .on_arrival = stm_quit_arrival,
-                .on_departure = NULL,
-                .on_read_ready = NULL,
-                .on_write_ready = NULL
+                .on_departure = stm_quit_departure,
+                .on_read_ready = stm_quit_read,
+                .on_write_ready = stm_quit_write
         }
 };
 

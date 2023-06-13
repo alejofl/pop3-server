@@ -39,6 +39,7 @@ void parser_argument_1_state_space(struct parser_event * ret, uint8_t c, connect
 }
 
 void parser_argument_1_state_any(struct parser_event * ret, uint8_t c, connection_data connection) {
+    printf("Me llegó una %c\n", c);
     if (connection->current_command.argument_1_length > ARGUMENT_LENGTH) {
         ret->type = INVALID_COMMAND;
         return;
@@ -59,6 +60,7 @@ void parser_argument_2_state_carriage_return(struct parser_event * ret, uint8_t 
 }
 
 void parser_argument_2_state_any(struct parser_event * ret, uint8_t c, connection_data connection) {
+    printf("Me llegó una %c\n", c);
     if (connection->current_command.argument_2_length > ARGUMENT_LENGTH) {
         ret->type = INVALID_COMMAND;
         return;
@@ -68,12 +70,10 @@ void parser_argument_2_state_any(struct parser_event * ret, uint8_t c, connectio
     connection->current_command.argument_2_length++;
 }
 
-// TODO lo unico que hace este es seguir con la rocola
 void parser_end_state_line_feed(struct parser_event * ret, uint8_t c, connection_data connection) {
-    return;
+    ret->type = VALID_COMMAND;
 }
 
 void parser_end_state_any(struct parser_event * ret, uint8_t c, connection_data connection) {
-    ret->type = ;
-    return;
+    ret->type = INVALID_COMMAND;
 }
