@@ -47,37 +47,38 @@ static int setup_ipv4_socket(unsigned long port) {
         return -1;
     }
 
-    return 0;
+    return server;
 }
 
 static int setup_ipv6_socket(unsigned long port) {
     // Storage for socket address
-//    struct sockaddr_in6 address;
-//    socklen_t address_length = sizeof(address);
-//
-//    memset(&address, 0, address_length);
-//    address.sin6_family = AF_INET6;
-//    address.sin6_addr = in6addr_any;
-//    address.sin6_port = htons(port);
-//
-//    int server = socket(IPV6_V6ONLY, SOCK_STREAM, IPPROTO_TCP);
-//
-//    if (server < 0) {
-//        return -1;
-//    }
-//
-//    // man 7 ip
-//    setsockopt(server, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
-//
-//    if (bind(server, (struct sockaddr *) &address, address_length) < 0) {
-//        return -1;
-//    }
-//
-//    if (listen(server, MAX_QUEUED_CONNECTIONS) < 0) {
-//        return -1;
-//    }
+    struct sockaddr_in6 address;
+    socklen_t address_length = sizeof(address);
 
-    return 0;
+    memset(&address, 0, address_length);
+    address.sin6_family = AF_INET6;
+    address.sin6_addr = in6addr_any;
+    address.sin6_port = htons(port);
+
+    int server = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
+
+    if (server < 0) {
+        return -1;
+    }
+
+    setsockopt(server, IPPROTO_IPV6, IPV6_V6ONLY, &(int){ 1 }, sizeof(int));
+    // man 7 ip
+    setsockopt(server, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
+
+    if (bind(server, (struct sockaddr *) &address, address_length) < 0) {
+        return -1;
+    }
+
+    if (listen(server, MAX_QUEUED_CONNECTIONS) < 0) {
+        return -1;
+    }
+
+    return server;
 }
 
 int main(int argc, char** argv) {
@@ -124,11 +125,11 @@ int main(int argc, char** argv) {
         error_message = "Failed to initialize IPv4 server socket";
         goto finally;
     }
-//    ipv6_socket = setup_ipv6_socket(port);
-//    if (ipv6_socket < 0) {
-//        error_message = "Failed to initialize IPv6 server socket";
-//        goto finally;
-//    }
+    ipv6_socket = setup_ipv6_socket(port);
+    if (ipv6_socket < 0) {
+        error_message = "Failed to initialize IPv6 server socket";
+        goto finally;
+    }
 
     // Initialize selector
     struct selector_init init_data = {
@@ -160,11 +161,11 @@ int main(int argc, char** argv) {
         error_message = "Failed to register IPv4 server socket in selector";
         goto finally;
     }
-//    ss = selector_register(selector, ipv6_socket, &server_handler, OP_READ, NULL);
-//    if (ss != SELECTOR_SUCCESS) {
-//        error_message = "Failed to register IPv6 server socket in selector";
-//        goto finally;
-//    }
+    ss = selector_register(selector, ipv6_socket, &server_handler, OP_READ, NULL);
+    if (ss != SELECTOR_SUCCESS) {
+        error_message = "Failed to register IPv6 server socket in selector";
+        goto finally;
+    }
 
     // Main server loop
     while (!terminated) {
@@ -194,9 +195,9 @@ int main(int argc, char** argv) {
         if (ipv4_socket >= 0) {
             close(ipv4_socket);
         }
-//        if (ipv6_socket >= 0) {
-//            close(ipv6_socket);
-//        }
+        if (ipv6_socket >= 0) {
+            close(ipv6_socket);
+        }
 
     return ret;
 }
