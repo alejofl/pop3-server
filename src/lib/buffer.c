@@ -1,5 +1,5 @@
 /**
- * buffer.c - buffer con acceso directo (útil para I/O) que mantiene
+ * in_buffer.c - in_buffer con acceso directo (útil para I/O) que mantiene
  *            mantiene puntero de lectura y de escritura.
  */
 #include <string.h>

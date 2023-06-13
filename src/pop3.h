@@ -13,11 +13,15 @@ struct command {
     size_t command_length;
     size_t argument_1_length;
     size_t argument_2_length;
+    bool finished;
+    bool error;
 };
 
 struct connection_data {
-    struct buffer buffer_object;
-    char buffer[BUFFER_SIZE];
+    struct buffer in_buffer_object;
+    char in_buffer[BUFFER_SIZE];
+    struct buffer out_buffer_object;
+    char out_buffer[BUFFER_SIZE];
     struct parser * parser;
     struct state_machine stm;
 

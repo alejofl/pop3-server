@@ -23,7 +23,7 @@ struct parser_event {
     unsigned type;
     /** caracteres asociados al evento */
     uint8_t  data[3];
-    /** cantidad de datos en el buffer `data' */
+    /** cantidad de datos en el in_buffer `data' */
     uint8_t  n;
 
     /** lista de eventos: si es diferente de null ocurrieron varios eventos */

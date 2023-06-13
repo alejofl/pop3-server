@@ -6,7 +6,7 @@
 #include <stdint.h>
 
 /**
- * buffer.c - buffer con acceso directo (útil para I/O) que mantiene
+ * in_buffer.c - in_buffer con acceso directo (útil para I/O) que mantiene
  *            mantiene puntero de lectura y de escritura.
  *
  *
@@ -41,7 +41,7 @@
  *                 ↑       ↑
  *                W=4      limit=6
  *
- * Quiero leer 3 del buffer
+ * Quiero leer 3 del in_buffer
  * ptr + 0 <- buffer_read_ptr, wbytes=4
  * donde guardo lo que lei porque lo lei pero no se donde lo guardo
  * buffer_read_adv(b, 3);
@@ -89,7 +89,7 @@ typedef struct buffer buffer;
 struct buffer {
     uint8_t *data;
 
-    /** límite superior del buffer. inmutable */
+    /** límite superior del in_buffer. inmutable */
     uint8_t *limit;
 
     /** puntero de lectura */
@@ -100,7 +100,7 @@ struct buffer {
 };
 
 /**
- * inicializa el buffer sin utilizar el heap
+ * inicializa el in_buffer sin utilizar el heap
  */
 void
 buffer_init(buffer *b, const size_t n, uint8_t *data);
@@ -130,7 +130,7 @@ void
 buffer_write(buffer *b, uint8_t c);
 
 /**
- * compacta el buffer
+ * compacta el in_buffer
  */
 void
 buffer_compact(buffer *b);
@@ -141,11 +141,11 @@ buffer_compact(buffer *b);
 void
 buffer_reset(buffer *b);
 
-/** retorna true si hay bytes para leer del buffer */
+/** retorna true si hay bytes para leer del in_buffer */
 bool
 buffer_can_read(buffer *b);
 
-/** retorna true si se pueden escribir bytes en el buffer */
+/** retorna true si se pueden escribir bytes en el in_buffer */
 bool
 buffer_can_write(buffer *b);
 

@@ -11,6 +11,9 @@
 #define MIN_COMMAND_LENGTH 3
 #define ARGUMENT_LENGTH 254
 
+#define END_LINE "\r\n"
+#define END_LINE_LENGTH 2
+
 typedef enum {
     AUTHORIZATION = 0,
     TRANSACTION,

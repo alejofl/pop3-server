@@ -19,4 +19,19 @@ stm_states transaction_top(connection_data connection);
 stm_states transaction_capa(connection_data connection);
 stm_states transaction_quit(connection_data connection);
 
+stm_states write_authorization_user(connection_data connection, char * destination, size_t * available_space);
+stm_states write_authorization_pass(connection_data connection, char * destination, size_t * available_space);
+stm_states write_authorization_capa(connection_data connection, char * destination, size_t * available_space);
+stm_states write_authorization_quit(connection_data connection, char * destination, size_t * available_space);
+
+stm_states write_transaction_stat(connection_data connection, char * destination, size_t * available_space);
+stm_states write_transaction_list(connection_data connection, char * destination, size_t * available_space);
+stm_states write_transaction_retr(connection_data connection, char * destination, size_t * available_space);
+stm_states write_transaction_dele(connection_data connection, char * destination, size_t * available_space);
+stm_states write_transaction_noop(connection_data connection, char * destination, size_t * available_space);
+stm_states write_transaction_rset(connection_data connection, char * destination, size_t * available_space);
+stm_states write_transaction_top(connection_data connection, char * destination, size_t * available_space);
+stm_states write_transaction_capa(connection_data connection, char * destination, size_t * available_space);
+stm_states write_transaction_quit(connection_data connection, char * destination, size_t * available_space);
+
 #endif
