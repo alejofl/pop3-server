@@ -65,7 +65,7 @@ stm_states authorization_pass(connection_data connection) {
 }
 
 stm_states authorization_capa(connection_data connection) {
-    printf("AUHTORIZATION CAPA\n");
+    connection->current_command.finished = false;
     return AUTHORIZATION;
 }
 
@@ -95,7 +95,7 @@ stm_states transaction_dele(connection_data connection) {
 }
 
 stm_states transaction_noop(connection_data connection) {
-    printf("TRANSACTION NOOP\n");
+    connection->current_command.finished = false;
     return TRANSACTION;
 }
 
@@ -104,13 +104,8 @@ stm_states transaction_rset(connection_data connection) {
     return TRANSACTION;
 }
 
-stm_states transaction_top(connection_data connection) {
-    printf("TRANSACTION TOP\n");
-    return TRANSACTION;
-}
-
 stm_states transaction_capa(connection_data connection) {
-    printf("TRANSACTION CAPA\n");
+    connection->current_command.finished = false;
     return TRANSACTION;
 }
 
@@ -121,7 +116,6 @@ stm_states transaction_quit(connection_data connection) {
 
 // -------- WRITE HANDLERS -------
 
-// FORRO DE MIERDA
 stm_states write_authorization_user(connection_data connection, char * destination, size_t * available_space) {
     char * message = "+OK Valid mailbox";
     size_t message_length = strlen(message);
@@ -174,7 +168,17 @@ stm_states write_authorization_pass(connection_data connection, char * destinati
 }
 
 stm_states write_authorization_capa(connection_data connection, char * destination, size_t * available_space) {
+    char * message = "+OK\r\nUSER\r\nPIPELINING\r\n.";
+    size_t message_length = strlen(message);
 
+    if (message_length > *available_space - END_LINE_LENGTH) {
+        return AUTHORIZATION;
+    }
+    strncpy(destination, message, message_length);
+    strncpy(destination + message_length, END_LINE, END_LINE_LENGTH);
+    *available_space = message_length + END_LINE_LENGTH;
+    connection->current_command.finished = true;
+    return AUTHORIZATION;
 }
 
 stm_states write_authorization_quit(connection_data connection, char * destination, size_t * available_space) {
@@ -186,15 +190,7 @@ stm_states write_transaction_stat(connection_data connection, char * destination
 }
 
 stm_states write_transaction_list(connection_data connection, char * destination, size_t * available_space) {
-    char * message = "Transaction LIST";
-    if (strlen(message) > *available_space - END_LINE_LENGTH) {
-        return TRANSACTION;
-    }
-    strncpy(destination, message, strlen(message));
-    strncpy(destination + strlen(message), END_LINE, END_LINE_LENGTH);
-    connection->current_command.finished = true;
-    *available_space = strlen(message) + END_LINE_LENGTH;
-    return TRANSACTION;
+
 }
 
 stm_states write_transaction_retr(connection_data connection, char * destination, size_t * available_space) {
@@ -206,19 +202,35 @@ stm_states write_transaction_dele(connection_data connection, char * destination
 }
 
 stm_states write_transaction_noop(connection_data connection, char * destination, size_t * available_space) {
+    char * message = "+OK";
+    size_t message_length = strlen(message);
 
+    if (message_length > *available_space - END_LINE_LENGTH) {
+        return TRANSACTION;
+    }
+    strncpy(destination, message, message_length);
+    strncpy(destination + message_length, END_LINE, END_LINE_LENGTH);
+    *available_space = message_length + END_LINE_LENGTH;
+    connection->current_command.finished = true;
+    return TRANSACTION;
 }
 
 stm_states write_transaction_rset(connection_data connection, char * destination, size_t * available_space) {
 
 }
 
-stm_states write_transaction_top(connection_data connection, char * destination, size_t * available_space) {
-
-}
-
 stm_states write_transaction_capa(connection_data connection, char * destination, size_t * available_space) {
+    char * message = "+OK\r\nUSER\r\nPIPELINING\r\n.";
+    size_t message_length = strlen(message);
 
+    if (message_length > *available_space - END_LINE_LENGTH) {
+        return TRANSACTION;
+    }
+    strncpy(destination, message, message_length);
+    strncpy(destination + message_length, END_LINE, END_LINE_LENGTH);
+    *available_space = message_length + END_LINE_LENGTH;
+    connection->current_command.finished = true;
+    return TRANSACTION;
 }
 
 stm_states write_transaction_quit(connection_data connection, char * destination, size_t * available_space) {
