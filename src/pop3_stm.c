@@ -92,6 +92,20 @@ stm_states read_command(struct selector_key * key, stm_states current_state) {
             return ERROR;
         } else if (event->type == INVALID_COMMAND) {
             printf("ERROR INVALID COMMAND PERO SINTACTICAMENTE\n");
+            bool saw_carriage_return = false;
+            while (i < read_bytes) {
+                char c = (char) buffer_read(&connection->in_buffer_object);
+                if (c == '\r') {
+                    saw_carriage_return = true;
+                } else if (c == '\n') {
+                    if (saw_carriage_return) {
+                        return ERROR;
+                    }
+                } else {
+                    saw_carriage_return = false;
+                }
+                i++;
+            }
             return ERROR;
         }
     }
@@ -173,7 +187,8 @@ stm_states stm_update_write(struct selector_key * key) {
 }
 
 void stm_error_arrival(stm_states state, struct selector_key * key) {
-
+    printf("ME LLEGO UN ERROR\n");
+    stm_change_state(&((connection_data) key->data)->stm, AUTHORIZATION, key);
 }
 
 void stm_error_departure(stm_states state, struct selector_key * key) {

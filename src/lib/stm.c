@@ -102,3 +102,8 @@ stm_state(struct state_machine *stm) {
     }
     return ret;
 }
+
+void stm_change_state(struct state_machine *stm, unsigned next, struct selector_key *key) {
+    jump(stm, next, key);
+}
+

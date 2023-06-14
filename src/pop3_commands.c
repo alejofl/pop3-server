@@ -108,7 +108,15 @@ stm_states write_transaction_stat(connection_data connection, char * destination
 }
 
 stm_states write_transaction_list(connection_data connection, char * destination, size_t * available_space) {
-
+    char * message = "Transaction LIST";
+    if (strlen(message) > *available_space - END_LINE_LENGTH) {
+        return TRANSACTION;
+    }
+    strncpy(destination, message, strlen(message));
+    strncpy(destination + strlen(message), END_LINE, END_LINE_LENGTH);
+    connection->current_command.finished = true;
+    *available_space = strlen(message) + END_LINE_LENGTH;
+    return TRANSACTION;
 }
 
 stm_states write_transaction_retr(connection_data connection, char * destination, size_t * available_space) {
