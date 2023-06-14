@@ -67,7 +67,7 @@ struct session {
     char maildir[PATH_SIZE];
     struct mail * mails;
     size_t mail_count;
-    size_t mail_dir_size;
+    size_t maildir_size;
 };
 
 #endif

@@ -75,7 +75,7 @@ stm_states authorization_quit(connection_data connection) {
 }
 
 stm_states transaction_stat(connection_data connection) {
-    printf("TRANSACTION STAT\n");
+    connection->current_command.finished = false;
     return TRANSACTION;
 }
 
@@ -186,7 +186,17 @@ stm_states write_authorization_quit(connection_data connection, char * destinati
 }
 
 stm_states write_transaction_stat(connection_data connection, char * destination, size_t * available_space) {
+    char message[BUFFER_SIZE];
+    size_t message_length = sprintf(message, "+OK %zu %zu", connection->current_session.mail_count, connection->current_session.maildir_size);
 
+    if (message_length > *available_space - END_LINE_LENGTH) {
+        return TRANSACTION;
+    }
+    strncpy(destination, message, message_length);
+    strncpy(destination + message_length, END_LINE, END_LINE_LENGTH);
+    *available_space = message_length + END_LINE_LENGTH;
+    connection->current_command.finished = true;
+    return TRANSACTION;
 }
 
 stm_states write_transaction_list(connection_data connection, char * destination, size_t * available_space) {

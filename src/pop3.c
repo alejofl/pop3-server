@@ -14,6 +14,8 @@ static void handle_read(struct selector_key * key);
 static void handle_write(struct selector_key * key);
 static void handle_close(struct selector_key * key);
 
+extern struct args args;
+
 struct state_definition stm_states_table[] = {
         {
                 .state = AUTHORIZATION,
@@ -116,8 +118,10 @@ void accept_pop_connection(struct selector_key * key) {
     connection->stm.initial = AUTHORIZATION;
     connection->stm.max_state = STM_STATES_COUNT;
     stm_init(&connection->stm);
+    connection->last_state = -1;
+    connection->current_session.mails = calloc(args.max_mails, sizeof(struct mail));
 
-    if (selector_register(key->s, new_socket_fd, &handler, OP_READ, connection) != SELECTOR_SUCCESS) {
+    if (selector_register(key->s, new_socket_fd, &handler, OP_WRITE, connection) != SELECTOR_SUCCESS) {
         parser_destroy(connection->parser);
         free(connection);
         close(new_socket_fd);
@@ -151,6 +155,7 @@ static void handle_write(struct selector_key * key) {
 static void handle_close(struct selector_key * key) {
     connection_data connection = (connection_data) key->data;
     parser_destroy(connection->parser);
+    free(connection->current_session.mails);
     free(connection);
     close(key->fd);
 }

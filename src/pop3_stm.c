@@ -5,7 +5,12 @@
 #include "pop3_commands.h"
 #include <parser.h>
 #include <string.h>
+#include <stdlib.h>
+#include <dirent.h>
+#include <sys/stat.h>
 #include "pop3_parser.h"
+
+extern struct args args;
 
 struct pop3_command authorization_commands[] = {
         {.command = "USER", .argument_1_type = REQUIRED, .argument_2_type = EMPTY, .handler = authorization_user, .writer = write_authorization_user},
@@ -127,39 +132,84 @@ stm_states write_command(struct selector_key * key, stm_states current_state) {
     return current_state;
 }
 
+bool greet(connection_data connection) {
+    char * message = "+OK POP3 server ready\r\n";
+
+    size_t write_bytes;
+    char * ptr = (char *) buffer_write_ptr(&connection->out_buffer_object, &write_bytes);
+    if (write_bytes >= strlen(message)) {
+        connection->current_command.finished = true;
+        strncpy(ptr, message, strlen(message));
+        buffer_write_adv(&connection->out_buffer_object, (ssize_t) strlen(message));
+        return true;
+    }
+    return false;
+}
+
 void stm_authorization_arrival(stm_states state, struct selector_key * key) {
 
 }
 
 void stm_authorization_departure(stm_states state, struct selector_key * key) {
-
+    connection_data connection = (connection_data) key->data;
+    connection->last_state = state;
 }
 
 stm_states stm_authorization_read(struct selector_key * key) {
-    printf("ESTOY EN EL AUTHORIZATION STATE\n");
     return read_command(key, AUTHORIZATION);
 }
 
 stm_states stm_authorization_write(struct selector_key * key) {
-    printf("ESTOY EN EL AUTHORIZATION STATE WRITE\n");
+    connection_data connection = (connection_data) key->data;
+
+    if (connection->last_state == -1) {
+        bool wrote = greet(connection);
+        if (wrote) {
+            connection->last_state = AUTHORIZATION;
+        }
+        return AUTHORIZATION;
+    }
     return write_command(key, AUTHORIZATION);
 }
 
 void stm_transaction_arrival(stm_states state, struct selector_key * key) {
+    connection_data connection = (connection_data) key->data;
 
+    DIR * directory = opendir(connection->current_session.maildir);
+    struct dirent * file;
+    while (connection->current_session.mail_count < args.max_mails && (file = readdir(directory)) != NULL) {
+        if (strcmp(".", file->d_name) == 0 || strcmp("..", file->d_name) == 0) {
+            continue;
+        }
+
+        size_t i = connection->current_session.mail_count;
+
+        strcat(connection->current_session.mails[i].path, connection->current_session.maildir);
+        strcat(connection->current_session.mails[i].path, "/");
+        strcat(connection->current_session.mails[i].path, file->d_name);
+
+        struct stat stat_data;
+        if (stat(connection->current_session.mails[i].path, &stat_data) == 0) {
+            connection->current_session.mails[i].size = stat_data.st_size;
+            connection->current_session.maildir_size += stat_data.st_size;
+            connection->current_session.mail_count++;
+        } else {
+            connection->current_session.mails[i].path[0] = '\0';
+        }
+    }
+    closedir(directory);
 }
 
 void stm_transaction_departure(stm_states state, struct selector_key * key) {
-
+    connection_data connection = (connection_data) key->data;
+    connection->last_state = state;
 }
 
 stm_states stm_transaction_read(struct selector_key * key) {
-    printf("ESTOY EN EL TRANSACTION STATE\n");
     return read_command(key, TRANSACTION);
 }
 
 stm_states stm_transaction_write(struct selector_key * key) {
-    printf("ESTOY EN EL TRANSACTION STATE WRITE\n");
     return write_command(key, TRANSACTION);
 }
 
@@ -168,7 +218,8 @@ void stm_update_arrival(stm_states state, struct selector_key * key) {
 }
 
 void stm_update_departure(stm_states state, struct selector_key * key) {
-
+    connection_data connection = (connection_data) key->data;
+    connection->last_state = state;
 }
 
 stm_states stm_update_read(struct selector_key * key) {
@@ -180,7 +231,6 @@ stm_states stm_update_write(struct selector_key * key) {
 }
 
 void stm_error_arrival(stm_states state, struct selector_key * key) {
-    printf("ME LLEGO UN ERROR\n");
     struct command * current_command = &((connection_data) key->data)->current_command;
     clear_parser_buffers(current_command);
     current_command->finished = true;
@@ -188,11 +238,12 @@ void stm_error_arrival(stm_states state, struct selector_key * key) {
 }
 
 void stm_error_departure(stm_states state, struct selector_key * key) {
-
+    connection_data connection = (connection_data) key->data;
+    connection->last_state = state;
 }
 
 stm_states stm_error_read(struct selector_key * key) {
-
+    abort();
 }
 
 stm_states stm_error_write(struct selector_key * key) {
@@ -205,23 +256,24 @@ stm_states stm_error_write(struct selector_key * key) {
     if (write_bytes >= strlen(message)) {
         strncpy(ptr, message, strlen(message));
         buffer_write_adv(&connection->out_buffer_object, (ssize_t) strlen(message));
-        return AUTHORIZATION;
+        return connection->last_state;
     }
 
     return ERROR;
 }
 
 void stm_quit_arrival(stm_states state, struct selector_key * key) {
-    printf("LLEGUE EN EL QUIT STATE\n");
+    printf("LLEGUE AL EL QUIT STATE\n");
     selector_unregister_fd(key->s, key->fd);
 }
 
 void stm_quit_departure(stm_states state, struct selector_key * key) {
-
+    connection_data connection = (connection_data) key->data;
+    connection->last_state = state;
 }
 
 stm_states stm_quit_read(struct selector_key * key) {
-
+    abort();
 }
 
 stm_states stm_quit_write(struct selector_key * key) {

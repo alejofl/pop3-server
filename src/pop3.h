@@ -27,6 +27,7 @@ struct connection_data {
 
     struct session current_session;
     struct command current_command;
+    stm_states last_state;
 };
 
 typedef struct connection_data * connection_data;
