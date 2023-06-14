@@ -9,6 +9,8 @@
 #include <sys/socket.h>  // socket
 #include <netinet/in.h>
 
+#include <args.h>
+
 #include "constants.h"
 #include "pop3.h"
 #include "selector.h"
@@ -88,31 +90,13 @@ int main(int argc, char** argv) {
     close(STDIN_FILENO);
     char * error_message = NULL;
 
-    unsigned long port = 62511;
-
     // Registering signals to de-allocate resources
     signal(SIGTERM, sigterm_handler);
     signal(SIGINT, sigterm_handler);
 
-    // TODO Use argc.c provided by El Coda
-    if (argc == 1) {
+    struct args args;
 
-    } else if (argc == 2) {
-        char * end = 0;
-        const long sl = strtol(argv[1], &end, 10);
-
-        if (end == argv[1] || '\0' != *end
-            || ((LONG_MIN == sl || LONG_MAX == sl) && ERANGE == errno)
-            || sl < 0 || sl > USHRT_MAX) {
-            fprintf(stderr, "port should be an integer: %s\n", argv[1]);
-            return 1;
-        }
-        port = sl;
-    } else {
-        fprintf(stderr, "Usage: %s <port>\n", argv[0]);
-        return 1;
-    }
-    // TODO END
+    parse_args(argc, argv, &args);
 
     int ipv4_socket;
     int ipv6_socket = -1;
@@ -120,12 +104,12 @@ int main(int argc, char** argv) {
     fd_selector selector = NULL;
 
     // Initialize the server socket
-    ipv4_socket = setup_ipv4_socket(port);
+    ipv4_socket = setup_ipv4_socket(args.port);
     if (ipv4_socket < 0) {
         error_message = "Failed to initialize IPv4 server socket";
         goto finally;
     }
-    ipv6_socket = setup_ipv6_socket(port);
+    ipv6_socket = setup_ipv6_socket(args.port);
     if (ipv6_socket < 0) {
         error_message = "Failed to initialize IPv6 server socket";
         goto finally;

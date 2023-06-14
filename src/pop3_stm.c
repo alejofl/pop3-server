@@ -21,7 +21,6 @@ struct pop3_command transaction_commands[] = {
         {.command = "DELE", .argument_1_type = REQUIRED, .argument_2_type = EMPTY, .handler = transaction_dele, .writer = write_transaction_dele},
         {.command = "NOOP", .argument_1_type = EMPTY, .argument_2_type = EMPTY, .handler = transaction_noop, .writer = write_transaction_noop},
         {.command = "RSET", .argument_1_type = EMPTY, .argument_2_type = EMPTY, .handler = transaction_rset, .writer = write_transaction_rset},
-        {.command = "TOP", .argument_1_type = REQUIRED, .argument_2_type = REQUIRED, .handler = transaction_top, .writer = write_transaction_top},
         {.command = "CAPA", .argument_1_type = EMPTY, .argument_2_type = EMPTY, .handler = transaction_capa, .writer = write_transaction_capa},
         {.command = "QUIT", .argument_1_type = EMPTY, .argument_2_type = EMPTY, .handler = transaction_quit, .writer = write_transaction_quit},
 };
@@ -199,7 +198,7 @@ stm_states stm_error_read(struct selector_key * key) {
 
 stm_states stm_error_write(struct selector_key * key) {
     char * message = "-ERR Invalid Command\r\n";
-    
+
     connection_data connection = (connection_data) key->data;
 
     size_t write_bytes;
