@@ -65,9 +65,9 @@ void parse_args(const int argc, char **argv, struct args * args) {
     memset(args, 0, sizeof(*args));
 
     args->port = 62511;
+    args->max_mails = INITIAL_MAILS_QTY;
 
     int c;
-    int users_count = 0;
 
     while (true) {
         int option_index = 0;
@@ -98,12 +98,12 @@ void parse_args(const int argc, char **argv, struct args * args) {
             case 'P':
                 break;
             case 'u':
-                if (users_count >= MAX_USERS) {
+                if (args->users_count >= MAX_USERS) {
                     fprintf(stderr, "Maximum number of command line users reached: %d.\n", MAX_USERS);
                     exit(1);
                 } else {
-                    user(optarg, &args->users[users_count]);
-                    users_count++;
+                    user(optarg, &args->users[args->users_count]);
+                    args->users_count++;
                 }
                 break;
             case 'v':

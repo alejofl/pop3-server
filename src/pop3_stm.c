@@ -58,7 +58,6 @@ stm_states read_command(struct selector_key * key, stm_states current_state) {
         buffer_read_adv(&connection->in_buffer_object, 1);
 
         if (event->type == VALID_COMMAND) {
-            printf("Command: %s\nArgument 1: %s\nArgument 2: %s\n", connection->current_command.command, connection->current_command.argument_1, connection->current_command.argument_2);
             for (int j = 0; j < pop3_commands_length[current_state]; j++) {
                 struct pop3_command maybe_command = pop3_commands[current_state][j];
                 if (strcmp(maybe_command.command, connection->current_command.command) == 0) {
@@ -116,7 +115,7 @@ stm_states write_command(struct selector_key * key, stm_states current_state) {
         ptr = (char *) buffer_write_ptr(&connection->out_buffer_object, &write_bytes);
         for (int j = 0; j < pop3_commands_length[current_state]; j++) {
             struct pop3_command maybe_command = pop3_commands[current_state][j];
-            if (strcmp(maybe_command.command, connection->current_command.command) == 0) {
+            if (strcasecmp(maybe_command.command, connection->current_command.command) == 0) {
                 stm_states next_state = maybe_command.writer(connection, ptr, &write_bytes);
                 buffer_write_adv(&connection->out_buffer_object, (ssize_t) write_bytes);
                 clear_parser_buffers(&connection->current_command);

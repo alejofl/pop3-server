@@ -25,6 +25,7 @@ struct connection_data {
     struct parser * parser;
     struct state_machine stm;
 
+    struct session current_session;
     struct command current_command;
 };
 

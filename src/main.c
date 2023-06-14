@@ -1,7 +1,5 @@
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
-#include <limits.h>
 #include <errno.h>
 #include <signal.h>
 
@@ -16,6 +14,7 @@
 #include "selector.h"
 
 static bool terminated = false;
+struct args args = {0};
 
 static void sigterm_handler(const int signal) {
     printf("Signal %d received, cleaning up and exiting\n", signal);
@@ -93,8 +92,6 @@ int main(int argc, char** argv) {
     // Registering signals to de-allocate resources
     signal(SIGTERM, sigterm_handler);
     signal(SIGINT, sigterm_handler);
-
-    struct args args;
 
     parse_args(argc, argv, &args);
 
