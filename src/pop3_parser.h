@@ -3,6 +3,8 @@
 
 #include <stddef.h>
 
+void clear_parser_buffers(struct command * command);
+
 void parser_command_state_any(struct parser_event * ret, uint8_t c, connection_data connection);
 void parser_command_state_space(struct parser_event * ret, uint8_t c, connection_data connection);
 void parser_command_state_carriage_return(struct parser_event * ret, uint8_t c, connection_data connection);

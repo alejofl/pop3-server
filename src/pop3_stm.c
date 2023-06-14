@@ -5,6 +5,7 @@
 #include "pop3_commands.h"
 #include <parser.h>
 #include <string.h>
+#include "pop3_parser.h"
 
 struct pop3_command authorization_commands[] = {
         {.command = "USER", .argument_1_type = REQUIRED, .argument_2_type = EMPTY, .handler = authorization_user, .writer = write_authorization_user},
@@ -53,13 +54,6 @@ stm_states read_command(struct selector_key * key, stm_states current_state) {
     size_t read_bytes;
     ptr = (char *) buffer_read_ptr(&connection->in_buffer_object, &read_bytes);
 
-    connection->current_command.command[0] = '\0';
-    connection->current_command.command_length = 0;
-    connection->current_command.argument_1[0] = '\0';
-    connection->current_command.argument_1_length = 0;
-    connection->current_command.argument_2[0] = '\0';
-    connection->current_command.argument_2_length = 0;
-
     for (int i = 0; i < read_bytes; i++) {
         const struct parser_event * event = parser_feed(connection->parser, ptr[i], connection);
         buffer_read_adv(&connection->in_buffer_object, 1);
@@ -80,6 +74,7 @@ stm_states read_command(struct selector_key * key, stm_states current_state) {
                             return next_state;
                         } else {
                             printf("ERROR EN ARGUMENT 2\n");
+                            clear_parser_buffers(&connection->current_command);
                             return ERROR;
                         }
                     } else {
@@ -120,12 +115,12 @@ stm_states write_command(struct selector_key * key, stm_states current_state) {
     if (buffer_can_write(&connection->out_buffer_object)) {
         size_t write_bytes;
         ptr = (char *) buffer_write_ptr(&connection->out_buffer_object, &write_bytes);
-
         for (int j = 0; j < pop3_commands_length[current_state]; j++) {
             struct pop3_command maybe_command = pop3_commands[current_state][j];
             if (strcmp(maybe_command.command, connection->current_command.command) == 0) {
                 stm_states next_state = maybe_command.writer(connection, ptr, &write_bytes);
                 buffer_write_adv(&connection->out_buffer_object, (ssize_t) write_bytes);
+                clear_parser_buffers(&connection->current_command);
                 return next_state;
             }
         }
@@ -188,7 +183,10 @@ stm_states stm_update_write(struct selector_key * key) {
 
 void stm_error_arrival(stm_states state, struct selector_key * key) {
     printf("ME LLEGO UN ERROR\n");
-    stm_change_state(&((connection_data) key->data)->stm, AUTHORIZATION, key);
+    struct command * current_command = &((connection_data) key->data)->current_command;
+    clear_parser_buffers(current_command);
+    current_command->finished = true;
+    selector_set_interest_key(key, OP_WRITE);
 }
 
 void stm_error_departure(stm_states state, struct selector_key * key) {
@@ -200,7 +198,19 @@ stm_states stm_error_read(struct selector_key * key) {
 }
 
 stm_states stm_error_write(struct selector_key * key) {
+    char * message = "-ERR Invalid Command\r\n";
+    
+    connection_data connection = (connection_data) key->data;
 
+    size_t write_bytes;
+    char * ptr = (char *) buffer_write_ptr(&connection->out_buffer_object, &write_bytes);
+    if (write_bytes >= strlen(message)) {
+        strncpy(ptr, message, strlen(message));
+        buffer_write_adv(&connection->out_buffer_object, (ssize_t) write_bytes);
+        return AUTHORIZATION;
+    }
+
+    return ERROR;
 }
 
 void stm_quit_arrival(stm_states state, struct selector_key * key) {

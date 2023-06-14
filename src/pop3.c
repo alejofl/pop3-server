@@ -139,7 +139,12 @@ static void handle_write(struct selector_key * key) {
     buffer_read_adv(&connection->out_buffer_object, n);
 
     if (connection->current_command.finished) {
-        selector_set_interest_key(key, OP_READ);
+        if (buffer_can_read(&connection->in_buffer_object)) {
+            selector_set_interest_key(key, OP_NOOP);
+            stm_handler_read(&((connection_data) key->data)->stm, key);
+        } else {
+            selector_set_interest_key(key, OP_READ);
+        }
     }
 }
 

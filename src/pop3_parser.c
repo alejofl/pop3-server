@@ -3,6 +3,15 @@
 #include "constants.h"
 #include "pop3_parser.h"
 
+void clear_parser_buffers(struct command * command) {
+    command->command[0] = '\0';
+    command->command_length = 0;
+    command->argument_1[0] = '\0';
+    command->argument_1_length = 0;
+    command->argument_2[0] = '\0';
+    command->argument_2_length = 0;
+}
+
 void parser_command_state_any(struct parser_event * ret, const uint8_t c, connection_data connection) {
     if (connection->current_command.command_length + 1 > COMMAND_LENGTH) {
         ret->type = INVALID_COMMAND;
