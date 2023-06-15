@@ -32,13 +32,6 @@ struct state_definition stm_states_table[] = {
                 .on_write_ready = stm_transaction_write
         },
         {
-                .state = UPDATE,
-                .on_arrival = stm_update_arrival,
-                .on_departure = stm_update_departure,
-                .on_read_ready = stm_update_read,
-                .on_write_ready = stm_update_write
-        },
-        {
                 .state = ERROR,
                 .on_arrival = stm_error_arrival,
                 .on_departure = stm_error_departure,

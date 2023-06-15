@@ -40,6 +40,7 @@ stm_states authorization_user(struct selector_key * key, connection_data connect
 
     for (int i = 0; i < args.users_count; i++) {
         if (strcmp(args.users[i].name, connection->current_command.argument_1) == 0) {
+            connection->current_session.maildir[0] = '\0';
             strcat(connection->current_session.maildir, args.mail_directory);
             strcat(connection->current_session.maildir, "/");
             strcat(connection->current_session.maildir, connection->current_command.argument_1);
@@ -94,8 +95,8 @@ stm_states authorization_capa(struct selector_key * key, connection_data connect
 }
 
 stm_states authorization_quit(struct selector_key * key, connection_data connection) {
-    printf("AUHTORIZATION QUIT\n");
-    return QUIT;
+    connection->current_command.finished = false;
+    return AUTHORIZATION;
 }
 
 stm_states transaction_stat(struct selector_key * key, connection_data connection) {
@@ -114,6 +115,7 @@ stm_states transaction_retr(struct selector_key * key, connection_data connectio
     connection->current_command.finished = false;
     connection->current_command.error = false;
     connection->current_command.mail_fd = -1;
+    connection->current_command.crlf_flag = ANY_CHARACTER;
     connection->current_command.sent_title = false;
 
     if (connection->current_command.argument_1_length > 0) {
@@ -170,8 +172,17 @@ stm_states transaction_capa(struct selector_key * key,connection_data connection
 }
 
 stm_states transaction_quit(struct selector_key * key,connection_data connection) {
-    printf("TRANSACTION QUIT\n");
-    return QUIT;
+    connection->current_command.finished = false;
+    connection->current_command.error = false;
+    for (int i = 0; i < connection->current_session.mail_count; i++) {
+        if (connection->current_session.mails[i].deleted) {
+            int result = remove(connection->current_session.mails[i].path);
+            if (result == -1) {
+                connection->current_command.error = true;
+            }
+        }
+    }
+    return TRANSACTION;
 }
 
 // -------- WRITE HANDLERS -------
@@ -242,7 +253,17 @@ stm_states write_authorization_capa(struct selector_key * key, connection_data c
 }
 
 stm_states write_authorization_quit(struct selector_key * key, connection_data connection, char * destination, size_t * available_space) {
+    char * message = "+OK Have a nice day";
+    size_t message_length = strlen(message);
 
+    if (message_length > *available_space - END_LINE_LENGTH) {
+        return AUTHORIZATION;
+    }
+    strncpy(destination, message, message_length);
+    strncpy(destination + message_length, END_LINE, END_LINE_LENGTH);
+    *available_space = message_length + END_LINE_LENGTH;
+    connection->current_command.finished = true;
+    return QUIT;
 }
 
 stm_states write_transaction_stat(struct selector_key * key, connection_data connection, char * destination, size_t * available_space) {
@@ -382,8 +403,8 @@ stm_states write_transaction_retr(struct selector_key * key, connection_data con
                 connection->current_command.crlf_flag = LF;
             } else if (c == '.' && connection->current_command.crlf_flag == LF) {
                 buffer_write(&connection->out_buffer_object, '.');
-                connection->current_command.crlf_flag = DOT;
                 if (!buffer_can_write(&connection->out_buffer_object)) {
+                    connection->current_command.crlf_flag = DOT;
                     return TRANSACTION;
                 }
             } else {
@@ -502,5 +523,26 @@ stm_states write_transaction_capa(struct selector_key * key, connection_data con
 }
 
 stm_states write_transaction_quit(struct selector_key * key, connection_data connection, char * destination, size_t * available_space) {
+    char * message = "+OK Have a nice day";
+    size_t message_length = strlen(message);
+    char * error_message = "-ERR Some deleted messages were not removed";
+    size_t error_message_length = strlen(error_message);
 
+    if (connection->current_command.error) {
+        if (error_message_length > *available_space - END_LINE_LENGTH) {
+            return TRANSACTION;
+        }
+        strncpy(destination, error_message, error_message_length);
+        strncpy(destination + error_message_length, END_LINE, END_LINE_LENGTH);
+        *available_space = error_message_length + END_LINE_LENGTH;
+    } else {
+        if (message_length > *available_space - END_LINE_LENGTH) {
+            return TRANSACTION;
+        }
+        strncpy(destination, message, message_length);
+        strncpy(destination + message_length, END_LINE, END_LINE_LENGTH);
+        *available_space = message_length + END_LINE_LENGTH;
+    }
+    connection->current_command.finished = true;
+    return QUIT;
 }

@@ -218,23 +218,6 @@ stm_states stm_transaction_write(struct selector_key * key) {
     return write_command(key, TRANSACTION);
 }
 
-void stm_update_arrival(stm_states state, struct selector_key * key) {
-
-}
-
-void stm_update_departure(stm_states state, struct selector_key * key) {
-    connection_data connection = (connection_data) key->data;
-    connection->last_state = state;
-}
-
-stm_states stm_update_read(struct selector_key * key) {
-
-}
-
-stm_states stm_update_write(struct selector_key * key) {
-
-}
-
 void stm_error_arrival(stm_states state, struct selector_key * key) {
     struct command * current_command = &((connection_data) key->data)->current_command;
     clear_parser_buffers(current_command);
@@ -253,7 +236,7 @@ stm_states stm_error_read(struct selector_key * key) {
 }
 
 stm_states stm_error_write(struct selector_key * key) {
-    char * message = "-ERR Invalid Command\r\n";
+    char * message = "-ERR Invalid command\r\n";
 
     connection_data connection = (connection_data) key->data;
 
@@ -269,13 +252,17 @@ stm_states stm_error_write(struct selector_key * key) {
 }
 
 void stm_quit_arrival(stm_states state, struct selector_key * key) {
-    printf("LLEGUE AL EL QUIT STATE\n");
+    connection_data connection = (connection_data) key->data;
+    for (int i = 0; i < args.users_count; i++) {
+        if (strcmp(args.users[i].name, connection->current_session.username) == 0) {
+            args.users[i].logged_in = false;
+        }
+    }
     selector_unregister_fd(key->s, key->fd);
 }
 
 void stm_quit_departure(stm_states state, struct selector_key * key) {
-    connection_data connection = (connection_data) key->data;
-    connection->last_state = state;
+    abort();
 }
 
 stm_states stm_quit_read(struct selector_key * key) {
@@ -283,5 +270,5 @@ stm_states stm_quit_read(struct selector_key * key) {
 }
 
 stm_states stm_quit_write(struct selector_key * key) {
-
+    abort();
 }

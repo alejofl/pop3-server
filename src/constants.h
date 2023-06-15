@@ -22,7 +22,6 @@
 typedef enum {
     AUTHORIZATION = 0,
     TRANSACTION,
-    UPDATE,
     ERROR,
     QUIT,
     STM_STATES_COUNT
