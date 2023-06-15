@@ -93,7 +93,7 @@ stm_states transaction_retr(connection_data connection) {
 }
 
 stm_states transaction_dele(connection_data connection) {
-    printf("TRANSACTION DELE\n");
+    connection->current_command.finished = false;
     return TRANSACTION;
 }
 
@@ -217,7 +217,7 @@ stm_states write_transaction_list(connection_data connection, char * destination
     if (connection->current_command.argument_1_length > 0) {
         char * end;
         long argument = strtol(connection->current_command.argument_1, &end, 10);
-        if (end[0] != '\0' || argument - 1 > connection->current_session.mail_count) {
+        if (end[0] != '\0' || argument - 1 >= connection->current_session.mail_count) {
             if (error_message_length > *available_space - END_LINE_LENGTH) {
                 return TRANSACTION;
             }
@@ -287,7 +287,34 @@ stm_states write_transaction_retr(connection_data connection, char * destination
 }
 
 stm_states write_transaction_dele(connection_data connection, char * destination, size_t * available_space) {
+    char * message = "+OK Message deleted";
+    size_t message_length = strlen(message);
+    char * error_message = "-ERR No such message";
+    size_t error_message_length = strlen(error_message);
 
+    char * end;
+    long argument = strtol(connection->current_command.argument_1, &end, 10);
+    if (end[0] != '\0' || argument - 1 >= connection->current_session.mail_count) {
+        if (error_message_length > *available_space - END_LINE_LENGTH) {
+            return TRANSACTION;
+        }
+        strncpy(destination, error_message, error_message_length);
+        strncpy(destination + error_message_length, END_LINE, END_LINE_LENGTH);
+        *available_space = error_message_length + END_LINE_LENGTH;
+        connection->current_command.finished = true;
+        return TRANSACTION;
+    }
+
+    connection->current_session.mails[argument - 1].deleted = true;
+
+    if (message_length > *available_space - END_LINE_LENGTH) {
+        return TRANSACTION;
+    }
+    strncpy(destination, message, message_length);
+    strncpy(destination + message_length, END_LINE, END_LINE_LENGTH);
+    *available_space = message_length + END_LINE_LENGTH;
+    connection->current_command.finished = true;
+    return TRANSACTION;
 }
 
 stm_states write_transaction_noop(connection_data connection, char * destination, size_t * available_space) {
