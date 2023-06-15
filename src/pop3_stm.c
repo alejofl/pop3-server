@@ -77,7 +77,6 @@ stm_states read_command(struct selector_key * key, stm_states current_state) {
                             return next_state;
                         } else {
                             printf("ERROR EN ARGUMENT 2\n");
-                            clear_parser_buffers(&connection->current_command);
                             return ERROR;
                         }
                     } else {
@@ -90,7 +89,7 @@ stm_states read_command(struct selector_key * key, stm_states current_state) {
             return ERROR;
         } else if (event->type == INVALID_COMMAND) {
             printf("ERROR INVALID COMMAND PERO SINTACTICAMENTE\n");
-            bool saw_carriage_return = false;
+            bool saw_carriage_return = ptr[i] == '\r';
             while (i < read_bytes) {
                 char c = (char) buffer_read(&connection->in_buffer_object);
                 if (c == '\r') {
@@ -123,7 +122,9 @@ stm_states write_command(struct selector_key * key, stm_states current_state) {
             if (strcasecmp(maybe_command.command, connection->current_command.command) == 0) {
                 stm_states next_state = maybe_command.writer(connection, ptr, &write_bytes);
                 buffer_write_adv(&connection->out_buffer_object, (ssize_t) write_bytes);
-                clear_parser_buffers(&connection->current_command);
+                if (connection->current_command.finished) {
+                    clear_parser_buffers(&connection->current_command);
+                }
                 return next_state;
             }
         }
@@ -174,6 +175,10 @@ stm_states stm_authorization_write(struct selector_key * key) {
 
 void stm_transaction_arrival(stm_states state, struct selector_key * key) {
     connection_data connection = (connection_data) key->data;
+
+    if (connection->current_session.mail_count != 0) {
+        return;
+    }
 
     DIR * directory = opendir(connection->current_session.maildir);
     struct dirent * file;
@@ -234,6 +239,7 @@ void stm_error_arrival(stm_states state, struct selector_key * key) {
     struct command * current_command = &((connection_data) key->data)->current_command;
     clear_parser_buffers(current_command);
     current_command->finished = true;
+    parser_reset(((connection_data) key->data)->parser);
     selector_set_interest_key(key, OP_WRITE);
 }
 

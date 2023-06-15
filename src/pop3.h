@@ -15,6 +15,8 @@ struct command {
     size_t argument_2_length;
     bool finished;
     bool error;
+    size_t response_index;
+    bool sent_title;
 };
 
 struct connection_data {
