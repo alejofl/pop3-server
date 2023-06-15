@@ -283,7 +283,35 @@ stm_states write_transaction_list(connection_data connection, char * destination
 }
 
 stm_states write_transaction_retr(connection_data connection, char * destination, size_t * available_space) {
+    char * message = "+OK Message follows"; //Podemos poner este mensaje o poner el size en octetos
+    size_t message_length = strlen(message);
+    char * error_message = "-ERR No such message";
+    size_t error_message_length = strlen(error_message);
 
+    char * end;
+    long argument = strtol(connection->current_command.argument_1, &end, 10);
+    if (end[0] != '\0' || argument - 1 >= connection->current_session.mail_count || connection->current_session.mails[argument-1].deleted == true ) { //ToDo chequiar q ande
+        if (error_message_length > *available_space - END_LINE_LENGTH) {
+            return TRANSACTION;
+        }
+        strncpy(destination, error_message, error_message_length);
+        strncpy(destination + error_message_length, END_LINE, END_LINE_LENGTH);
+        *available_space = error_message_length + END_LINE_LENGTH;
+        connection->current_command.finished = true;
+        return TRANSACTION;
+    }
+
+    if (message_length > *available_space - END_LINE_LENGTH) {
+        return TRANSACTION;
+    }
+    strncpy(destination, message, message_length);
+    strncpy(destination + message_length, END_LINE, END_LINE_LENGTH);
+    *available_space = message_length + END_LINE_LENGTH;
+
+
+
+    connection->current_command.finished = true;
+    return TRANSACTION;
 }
 
 stm_states write_transaction_dele(connection_data connection, char * destination, size_t * available_space) {
@@ -294,7 +322,7 @@ stm_states write_transaction_dele(connection_data connection, char * destination
 
     char * end;
     long argument = strtol(connection->current_command.argument_1, &end, 10);
-    if (end[0] != '\0' || argument - 1 >= connection->current_session.mail_count) {
+    if (end[0] != '\0' || argument - 1 >= connection->current_session.mail_count || connection->current_session.mails[argument-1].deleted == true ) { //ToDo chequiar q ande
         if (error_message_length > *available_space - END_LINE_LENGTH) {
             return TRANSACTION;
         }
@@ -332,7 +360,21 @@ stm_states write_transaction_noop(connection_data connection, char * destination
 }
 
 stm_states write_transaction_rset(connection_data connection, char * destination, size_t * available_space) {
+    char * message = "+OK";
+    size_t message_length = strlen(message);
 
+    for ( int i=0; i < connection->current_session.mail_count; i++) {
+        connection->current_session.mails[i].deleted = false;
+    }
+
+    if (message_length > *available_space - END_LINE_LENGTH) {
+        return TRANSACTION;
+    }
+    strncpy(destination, message, message_length);
+    strncpy(destination + message_length, END_LINE, END_LINE_LENGTH);
+    *available_space = message_length + END_LINE_LENGTH;
+    connection->current_command.finished = true;
+    return TRANSACTION;
 }
 
 stm_states write_transaction_capa(connection_data connection, char * destination, size_t * available_space) {
