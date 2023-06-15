@@ -2,12 +2,35 @@
 #include <string.h>
 #include <dirent.h>
 #include <stdlib.h>
+#include <fcntl.h>
 #include "constants.h"
 #include "pop3_commands.h"
 
 extern struct args args;
 
-stm_states authorization_user(connection_data connection) {
+void read_from_mail_file(struct selector_key * file_key) {
+    connection_data connection = (connection_data) file_key->data;
+
+    size_t write_bytes;
+    char * ptr = (char *) buffer_write_ptr(&connection->current_command.mail_buffer_object, &write_bytes);
+    ssize_t n = read(connection->current_command.mail_fd, ptr, write_bytes);
+    // Si no puede leer entonces explota
+    buffer_write_adv(&connection->current_command.mail_buffer_object, n);
+    if (n == 0) {
+        selector_unregister_fd(file_key->s, connection->current_command.mail_fd);
+        close(connection->current_command.mail_fd);
+        connection->current_command.mail_fd = -1;
+    } else  {
+        selector_set_interest_key(file_key, OP_NOOP);
+    }
+    selector_set_interest(file_key->s, connection->current_command.connection_fd, OP_WRITE);
+}
+
+struct fd_handler mail_file_handler = {
+        .handle_read = read_from_mail_file
+};
+
+stm_states authorization_user(struct selector_key * key, connection_data connection) {
     connection->current_command.finished = false;
 
     if (strlen(connection->current_command.argument_1) > USERNAME_SIZE) {
@@ -39,7 +62,7 @@ stm_states authorization_user(connection_data connection) {
     return AUTHORIZATION;
 }
 
-stm_states authorization_pass(connection_data connection) {
+stm_states authorization_pass(struct selector_key * key, connection_data connection) {
     connection->current_command.finished = false;
 
     bool error = false;
@@ -65,44 +88,72 @@ stm_states authorization_pass(connection_data connection) {
     return AUTHORIZATION;
 }
 
-stm_states authorization_capa(connection_data connection) {
+stm_states authorization_capa(struct selector_key * key, connection_data connection) {
     connection->current_command.finished = false;
     return AUTHORIZATION;
 }
 
-stm_states authorization_quit(connection_data connection) {
+stm_states authorization_quit(struct selector_key * key, connection_data connection) {
     printf("AUHTORIZATION QUIT\n");
     return QUIT;
 }
 
-stm_states transaction_stat(connection_data connection) {
+stm_states transaction_stat(struct selector_key * key, connection_data connection) {
     connection->current_command.finished = false;
     return TRANSACTION;
 }
 
-stm_states transaction_list(connection_data connection) {
+stm_states transaction_list(struct selector_key * key, connection_data connection) {
     connection->current_command.finished = false;
     connection->current_command.response_index = 0;
     connection->current_command.sent_title = false;
     return TRANSACTION;
 }
 
-stm_states transaction_retr(connection_data connection) {
-    printf("TRANSACTION RETR\n");
+stm_states transaction_retr(struct selector_key * key, connection_data connection) {
+    connection->current_command.finished = false;
+    connection->current_command.error = false;
+    connection->current_command.mail_fd = -1;
+    connection->current_command.sent_title = false;
+
+    if (connection->current_command.argument_1_length > 0) {
+        char * end;
+        long argument = strtol(connection->current_command.argument_1, &end, 10);
+        if (end[0] != '\0' || argument - 1 >= connection->current_session.mail_count || connection->current_session.mails[argument - 1].deleted) {
+            connection->current_command.error = true;
+            return TRANSACTION;
+        }
+
+        connection->current_command.connection_fd = key->fd;
+        int fd = open(connection->current_session.mails[argument - 1].path, O_RDONLY);
+        connection->current_command.mail_fd = fd;
+        if (fd == -1) {
+            connection->current_command.error = true;
+            return TRANSACTION;
+        }
+        if (selector_register(key->s, fd, &mail_file_handler, OP_NOOP, connection) != SELECTOR_SUCCESS) {
+            close(fd);
+            connection->current_command.error = true;
+            return TRANSACTION;
+        }
+        selector_set_interest_key(key, OP_NOOP);
+        return TRANSACTION;
+    }
+    connection->current_command.error = true;
     return TRANSACTION;
 }
 
-stm_states transaction_dele(connection_data connection) {
+stm_states transaction_dele(struct selector_key * key, connection_data connection) {
     connection->current_command.finished = false;
     return TRANSACTION;
 }
 
-stm_states transaction_noop(connection_data connection) {
+stm_states transaction_noop(struct selector_key * key, connection_data connection) {
     connection->current_command.finished = false;
     return TRANSACTION;
 }
 
-stm_states transaction_rset(connection_data connection) {
+stm_states transaction_rset(struct selector_key * key,connection_data connection) {
     connection->current_command.finished = false;
     size_t maildir_size = 0;
     for (int i = 0; i < connection->current_session.mail_count; i++) {
@@ -113,19 +164,19 @@ stm_states transaction_rset(connection_data connection) {
     return TRANSACTION;
 }
 
-stm_states transaction_capa(connection_data connection) {
+stm_states transaction_capa(struct selector_key * key,connection_data connection) {
     connection->current_command.finished = false;
     return TRANSACTION;
 }
 
-stm_states transaction_quit(connection_data connection) {
+stm_states transaction_quit(struct selector_key * key,connection_data connection) {
     printf("TRANSACTION QUIT\n");
     return QUIT;
 }
 
 // -------- WRITE HANDLERS -------
 
-stm_states write_authorization_user(connection_data connection, char * destination, size_t * available_space) {
+stm_states write_authorization_user(struct selector_key * key, connection_data connection, char * destination, size_t * available_space) {
     char * message = "+OK Valid mailbox";
     size_t message_length = strlen(message);
     char * error_message = "-ERR Invalid mailbox";
@@ -150,7 +201,7 @@ stm_states write_authorization_user(connection_data connection, char * destinati
     return AUTHORIZATION;
 }
 
-stm_states write_authorization_pass(connection_data connection, char * destination, size_t * available_space) {
+stm_states write_authorization_pass(struct selector_key * key, connection_data connection, char * destination, size_t * available_space) {
     char * message = "+OK Logged in and mailbox ready";
     size_t message_length = strlen(message);
     char * error_message = "-ERR Invalid password or unable to lock mailbox";
@@ -176,7 +227,7 @@ stm_states write_authorization_pass(connection_data connection, char * destinati
     return TRANSACTION;
 }
 
-stm_states write_authorization_capa(connection_data connection, char * destination, size_t * available_space) {
+stm_states write_authorization_capa(struct selector_key * key, connection_data connection, char * destination, size_t * available_space) {
     char * message = "+OK\r\nUSER\r\nPIPELINING\r\n.";
     size_t message_length = strlen(message);
 
@@ -190,11 +241,11 @@ stm_states write_authorization_capa(connection_data connection, char * destinati
     return AUTHORIZATION;
 }
 
-stm_states write_authorization_quit(connection_data connection, char * destination, size_t * available_space) {
+stm_states write_authorization_quit(struct selector_key * key, connection_data connection, char * destination, size_t * available_space) {
 
 }
 
-stm_states write_transaction_stat(connection_data connection, char * destination, size_t * available_space) {
+stm_states write_transaction_stat(struct selector_key * key, connection_data connection, char * destination, size_t * available_space) {
     char message[BUFFER_SIZE];
 
     size_t real_mail_count = 0;
@@ -216,7 +267,7 @@ stm_states write_transaction_stat(connection_data connection, char * destination
     return TRANSACTION;
 }
 
-stm_states write_transaction_list(connection_data connection, char * destination, size_t * available_space) {
+stm_states write_transaction_list(struct selector_key * key, connection_data connection, char * destination, size_t * available_space) {
     char * error_message = "-ERR No such message";
     size_t error_message_length = strlen(error_message);
 
@@ -288,15 +339,11 @@ stm_states write_transaction_list(connection_data connection, char * destination
     return TRANSACTION;
 }
 
-stm_states write_transaction_retr(connection_data connection, char * destination, size_t * available_space) {
-    char * message = "+OK Message follows"; //Podemos poner este mensaje o poner el size en octetos
-    size_t message_length = strlen(message);
+stm_states write_transaction_retr(struct selector_key * key, connection_data connection, char * destination, size_t * available_space) {
     char * error_message = "-ERR No such message";
     size_t error_message_length = strlen(error_message);
 
-    char * end;
-    long argument = strtol(connection->current_command.argument_1, &end, 10);
-    if (end[0] != '\0' || argument - 1 >= connection->current_session.mail_count || connection->current_session.mails[argument-1].deleted == true ) { //ToDo chequiar q ande
+    if (connection->current_command.error) {
         if (error_message_length > *available_space - END_LINE_LENGTH) {
             return TRANSACTION;
         }
@@ -307,20 +354,80 @@ stm_states write_transaction_retr(connection_data connection, char * destination
         return TRANSACTION;
     }
 
-    if (message_length > *available_space - END_LINE_LENGTH) {
+    if (!connection->current_command.sent_title) {
+        char * ok = "+OK message follows\r\n";
+        size_t ok_length = strlen(ok);
+        if (ok_length > *available_space) {
+            return TRANSACTION;
+        }
+        strncpy(destination, ok, ok_length);
+        *available_space = ok_length;
+        connection->current_command.sent_title = true;
+        selector_set_interest_key(key, OP_NOOP);
+        selector_set_interest(key->s, connection->current_command.mail_fd, OP_READ);
         return TRANSACTION;
     }
-    strncpy(destination, message, message_length);
-    strncpy(destination + message_length, END_LINE, END_LINE_LENGTH);
-    *available_space = message_length + END_LINE_LENGTH;
 
+    while (buffer_can_write(&connection->out_buffer_object)) {
+        if (buffer_can_read(&connection->current_command.mail_buffer_object)) {
+            char c;
+            if (connection->current_command.crlf_flag == DOT) {
+                c = '.';
+            } else {
+                c = (char) buffer_read(&connection->current_command.mail_buffer_object);
+            }
+            if (c == '\r') {
+                connection->current_command.crlf_flag = CR;
+            } else if (c == '\n' && connection->current_command.crlf_flag == CR) {
+                connection->current_command.crlf_flag = LF;
+            } else if (c == '.' && connection->current_command.crlf_flag == LF) {
+                buffer_write(&connection->out_buffer_object, '.');
+                connection->current_command.crlf_flag = DOT;
+                if (!buffer_can_write(&connection->out_buffer_object)) {
+                    return TRANSACTION;
+                }
+            } else {
+                connection->current_command.crlf_flag = ANY_CHARACTER;
+            }
+            buffer_write(&connection->out_buffer_object, c);
+        } else {
+            if (connection->current_command.mail_fd == -1) {
+                char retr_ending[5];
+                size_t retr_ending_length = 0;
+                if (connection->current_command.crlf_flag != LF) {
+                    strcpy(retr_ending, "\r\n");
+                    retr_ending_length = 2;
+                }
+                strcpy(retr_ending + retr_ending_length, ".\r\n");
+                retr_ending_length += 3;
 
+                size_t write_bytes;
+                char * ptr = (char *) buffer_write_ptr(&connection->out_buffer_object, &write_bytes);
+                if (retr_ending_length > write_bytes) {
+                    return TRANSACTION;
+                }
+                strncpy(ptr, retr_ending, retr_ending_length);
+                buffer_write_adv(&connection->out_buffer_object, (ssize_t) retr_ending_length);
 
-    connection->current_command.finished = true;
+                connection->current_command.finished = true;
+                connection->current_command.crlf_flag = ANY_CHARACTER;
+                *available_space = 0;
+                return TRANSACTION;
+            } else {
+                break;
+            }
+        }
+    }
+
+    if (!buffer_can_read(&connection->current_command.mail_buffer_object)) {
+        selector_set_interest_key(key, OP_NOOP);
+        selector_set_interest(key->s, connection->current_command.mail_fd, OP_READ);
+    }
+    *available_space = 0;
     return TRANSACTION;
 }
 
-stm_states write_transaction_dele(connection_data connection, char * destination, size_t * available_space) {
+stm_states write_transaction_dele(struct selector_key * key, connection_data connection, char * destination, size_t * available_space) {
     char * message = "+OK Message deleted";
     size_t message_length = strlen(message);
     char * error_message = "-ERR No such message";
@@ -352,7 +459,7 @@ stm_states write_transaction_dele(connection_data connection, char * destination
     return TRANSACTION;
 }
 
-stm_states write_transaction_noop(connection_data connection, char * destination, size_t * available_space) {
+stm_states write_transaction_noop(struct selector_key * key, connection_data connection, char * destination, size_t * available_space) {
     char * message = "+OK";
     size_t message_length = strlen(message);
 
@@ -366,7 +473,7 @@ stm_states write_transaction_noop(connection_data connection, char * destination
     return TRANSACTION;
 }
 
-stm_states write_transaction_rset(connection_data connection, char * destination, size_t * available_space) {
+stm_states write_transaction_rset(struct selector_key * key, connection_data connection, char * destination, size_t * available_space) {
     char * message = "+OK";
     size_t message_length = strlen(message);
 
@@ -380,7 +487,7 @@ stm_states write_transaction_rset(connection_data connection, char * destination
     return TRANSACTION;
 }
 
-stm_states write_transaction_capa(connection_data connection, char * destination, size_t * available_space) {
+stm_states write_transaction_capa(struct selector_key * key, connection_data connection, char * destination, size_t * available_space) {
     char * message = "+OK\r\nUSER\r\nPIPELINING\r\n.";
     size_t message_length = strlen(message);
 
@@ -394,6 +501,6 @@ stm_states write_transaction_capa(connection_data connection, char * destination
     return TRANSACTION;
 }
 
-stm_states write_transaction_quit(connection_data connection, char * destination, size_t * available_space) {
+stm_states write_transaction_quit(struct selector_key * key, connection_data connection, char * destination, size_t * available_space) {
 
 }

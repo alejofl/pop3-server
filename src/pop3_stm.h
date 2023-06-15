@@ -15,8 +15,8 @@ struct pop3_command {
     char * command;
     argument_type argument_1_type;
     argument_type argument_2_type;
-    stm_states (* handler)(connection_data data);
-    stm_states (* writer)(connection_data data, char * destination, size_t * available_space);
+    stm_states (* handler)(struct selector_key * key, connection_data data);
+    stm_states (* writer)(struct selector_key * key, connection_data data, char * destination, size_t * available_space);
 };
 
 void stm_authorization_arrival(stm_states state, struct selector_key * key);

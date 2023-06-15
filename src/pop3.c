@@ -119,6 +119,8 @@ void accept_pop_connection(struct selector_key * key) {
     connection->stm.max_state = STM_STATES_COUNT;
     stm_init(&connection->stm);
     connection->last_state = -1;
+    connection->current_command.mail_fd = -1;
+    buffer_init(&connection->current_command.mail_buffer_object, BUFFER_SIZE, (uint8_t *) connection->current_command.mail_buffer);
     connection->current_session.mails = calloc(args.max_mails, sizeof(struct mail));
 
     if (selector_register(key->s, new_socket_fd, &handler, OP_WRITE, connection) != SELECTOR_SUCCESS) {

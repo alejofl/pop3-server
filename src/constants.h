@@ -70,4 +70,11 @@ struct session {
     size_t maildir_size;
 };
 
+typedef enum {
+    ANY_CHARACTER,
+    CR,
+    LF,
+    DOT
+} crlf_flag;
+
 #endif

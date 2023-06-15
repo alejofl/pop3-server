@@ -13,9 +13,15 @@ struct command {
     size_t command_length;
     size_t argument_1_length;
     size_t argument_2_length;
+
     bool finished;
     bool error;
     size_t response_index;
+    int mail_fd;
+    int connection_fd;
+    crlf_flag crlf_flag;
+    struct buffer mail_buffer_object;
+    char mail_buffer[BUFFER_SIZE];
     bool sent_title;
 };
 
