@@ -66,26 +66,27 @@ stm_states authorization_user(struct selector_key * key, connection_data connect
 stm_states authorization_pass(struct selector_key * key, connection_data connection) {
     connection->current_command.finished = false;
 
-    bool error = false;
-    for (int i = 0; !error && i < args.users_count; i++) {
+    bool error = true;
+    int i;
+    for (i = 0; i < args.users_count; i++) {
         if (strcmp(args.users[i].name, connection->current_session.username) == 0) {
             if (args.users[i].logged_in) {
                 connection->current_command.error = true;
                 connection->current_session.username[0] = '\0';
                 connection->current_session.maildir[0] = '\0';
-                return AUTHORIZATION;
-            } else {
-                args.users[i].logged_in = true;
+                break;
             }
+            args.users[i].logged_in = true;
             error = strcmp(args.users[i].pass, connection->current_command.argument) != 0;
-            if (error) {
-                connection->current_session.username[0] = '\0';
-                connection->current_session.maildir[0] = '\0';
-                args.users[i].logged_in = false;
-            }
+            break;
         }
     }
     connection->current_command.error = error;
+    if (error) {
+        connection->current_session.username[0] = '\0';
+        connection->current_session.maildir[0] = '\0';
+        args.users[i].logged_in = false;
+    }
     return AUTHORIZATION;
 }
 
