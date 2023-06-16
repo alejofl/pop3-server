@@ -66,6 +66,7 @@ struct session {
     struct mail * mails;
     size_t mail_count;
     size_t maildir_size;
+    bool requested_quit;
 };
 
 typedef enum {

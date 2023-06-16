@@ -4,6 +4,7 @@
 #include <buffer.h>
 #include <stm.h>
 #include <parser.h>
+#include <string.h>
 
 #include "constants.h"
 #include "pop3.h"
@@ -107,9 +108,11 @@ void accept_pop_connection(struct selector_key * key) {
     connection->current_command.mail_fd = -1;
     buffer_init(&connection->current_command.mail_buffer_object, BUFFER_SIZE, (uint8_t *) connection->current_command.mail_buffer);
     connection->current_session.mails = calloc(args.max_mails, sizeof(struct mail));
+    connection->current_session.requested_quit = false;
 
     if (selector_register(key->s, new_socket_fd, &handler, OP_WRITE, connection) != SELECTOR_SUCCESS) {
         parser_destroy(connection->parser);
+        free(connection->current_session.mails);
         free(connection);
         close(new_socket_fd);
     }
@@ -130,7 +133,9 @@ static void handle_write(struct selector_key * key) {
     buffer_read_adv(&connection->out_buffer_object, n);
 
     if (connection->current_command.finished) {
-        if (buffer_can_read(&connection->in_buffer_object)) {
+        if (connection->current_session.requested_quit) {
+            selector_unregister_fd(key->s, key->fd);
+        } else if (buffer_can_read(&connection->in_buffer_object)) {
             selector_set_interest_key(key, OP_NOOP);
             stm_handler_read(&((connection_data) key->data)->stm, key);
         } else {
@@ -141,6 +146,13 @@ static void handle_write(struct selector_key * key) {
 
 static void handle_close(struct selector_key * key) {
     connection_data connection = (connection_data) key->data;
+
+    for (int i = 0; i < args.users_count; i++) {
+        if (strcmp(args.users[i].name, connection->current_session.username) == 0) {
+            args.users[i].logged_in = false;
+        }
+    }
+
     parser_destroy(connection->parser);
     free(connection->current_session.mails);
     free(connection);

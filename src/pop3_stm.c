@@ -246,12 +246,7 @@ stm_states stm_error_write(struct selector_key * key) {
 
 void stm_quit_arrival(stm_states state, struct selector_key * key) {
     connection_data connection = (connection_data) key->data;
-    for (int i = 0; i < args.users_count; i++) {
-        if (strcmp(args.users[i].name, connection->current_session.username) == 0) {
-            args.users[i].logged_in = false;
-        }
-    }
-    selector_unregister_fd(key->s, key->fd);
+    connection->current_session.requested_quit = true;
 }
 
 void stm_quit_departure(stm_states state, struct selector_key * key) {
