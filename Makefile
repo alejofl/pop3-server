@@ -1,4 +1,4 @@
-CFLAGS=-g -Wall -Wextra -pedantic -pedantic-errors -O3 -std=c11 -D_POSIX_C_SOURCE=200112L -D__BSD_VISIBLE=1 -Wno-unused-parameter -Wno-implicit-fallthrough  -fsanitize=address
+CFLAGS=-g -Wall -Wextra -pedantic -pedantic-errors -std=c11 -D_POSIX_C_SOURCE=200112L -D__BSD_VISIBLE=1 -Wno-unused-parameter -Wno-implicit-fallthrough -Wno-stringop-truncation -fsanitize=address
 
 LDFLAGS=
 
@@ -23,7 +23,7 @@ $(OUTPUT_FILE): $(OBJECTS)
 
 obj/%.o: src/%.c
 	mkdir -p $(@D)
-	$(CC) -g -I$(LIB_HEADERS) -c $< -o $@
+	$(CC) $(CFLAGS) -I$(LIB_HEADERS) -c $< -o $@
 
 clean:
 	rm -rf $(OUTPUT_FOLDER)

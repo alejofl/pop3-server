@@ -38,7 +38,7 @@ stm_states authorization_user(struct selector_key * key, connection_data connect
         return AUTHORIZATION;
     }
 
-    for (int i = 0; i < args.users_count; i++) {
+    for (size_t i = 0; i < args.users_count; i++) {
         if (strcmp(args.users[i].name, connection->current_command.argument) == 0) {
             connection->current_session.maildir[0] = '\0';
             strcat(connection->current_session.maildir, args.mail_directory);
@@ -67,7 +67,7 @@ stm_states authorization_pass(struct selector_key * key, connection_data connect
     connection->current_command.finished = false;
 
     bool error = true;
-    int i;
+    size_t i;
     for (i = 0; i < args.users_count; i++) {
         if (strcmp(args.users[i].name, connection->current_session.username) == 0) {
             if (args.users[i].logged_in) {
@@ -121,7 +121,7 @@ stm_states transaction_retr(struct selector_key * key, connection_data connectio
 
     if (connection->current_command.argument_length > 0) {
         char * end;
-        long argument = strtol(connection->current_command.argument, &end, 10);
+        unsigned long argument = strtol(connection->current_command.argument, &end, 10);
         if (end[0] != '\0' || argument - 1 >= connection->current_session.mail_count || connection->current_session.mails[argument - 1].deleted) {
             connection->current_command.error = true;
             return TRANSACTION;
@@ -159,7 +159,7 @@ stm_states transaction_noop(struct selector_key * key, connection_data connectio
 stm_states transaction_rset(struct selector_key * key,connection_data connection) {
     connection->current_command.finished = false;
     size_t maildir_size = 0;
-    for (int i = 0; i < connection->current_session.mail_count; i++) {
+    for (size_t i = 0; i < connection->current_session.mail_count; i++) {
         connection->current_session.mails[i].deleted = false;
         maildir_size += connection->current_session.mails[i].size;
     }
@@ -175,7 +175,7 @@ stm_states transaction_capa(struct selector_key * key,connection_data connection
 stm_states transaction_quit(struct selector_key * key,connection_data connection) {
     connection->current_command.finished = false;
     connection->current_command.error = false;
-    for (int i = 0; i < connection->current_session.mail_count; i++) {
+    for (size_t i = 0; i < connection->current_session.mail_count; i++) {
         if (connection->current_session.mails[i].deleted) {
             int result = remove(connection->current_session.mails[i].path);
             if (result == -1) {
@@ -271,7 +271,7 @@ stm_states write_transaction_stat(struct selector_key * key, connection_data con
     char message[BUFFER_SIZE];
 
     size_t real_mail_count = 0;
-    for (int i = 0; i < connection->current_session.mail_count; i++) {
+    for (size_t i = 0; i < connection->current_session.mail_count; i++) {
         if (!connection->current_session.mails[i].deleted) {
             real_mail_count++;
         }
@@ -295,7 +295,7 @@ stm_states write_transaction_list(struct selector_key * key, connection_data con
 
     if (connection->current_command.argument_length > 0) {
         char * end;
-        long argument = strtol(connection->current_command.argument, &end, 10);
+        unsigned long argument = strtol(connection->current_command.argument, &end, 10);
         if (end[0] != '\0' || argument - 1 >= connection->current_session.mail_count) {
             if (error_message_length > *available_space - END_LINE_LENGTH) {
                 return TRANSACTION;
@@ -414,7 +414,7 @@ stm_states write_transaction_retr(struct selector_key * key, connection_data con
             buffer_write(&connection->out_buffer_object, c);
         } else {
             if (connection->current_command.mail_fd == -1) {
-                char retr_ending[5];
+                char retr_ending[6];
                 size_t retr_ending_length = 0;
                 if (connection->current_command.crlf_flag != LF) {
                     strcpy(retr_ending, "\r\n");
@@ -456,7 +456,7 @@ stm_states write_transaction_dele(struct selector_key * key, connection_data con
     size_t error_message_length = strlen(error_message);
 
     char * end;
-    long argument = strtol(connection->current_command.argument, &end, 10);
+    unsigned long argument = strtol(connection->current_command.argument, &end, 10);
     if (end[0] != '\0' || argument - 1 >= connection->current_session.mail_count || connection->current_session.mails[argument - 1].deleted == true) {
         if (error_message_length > *available_space - END_LINE_LENGTH) {
             return TRANSACTION;

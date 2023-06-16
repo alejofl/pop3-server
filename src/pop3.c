@@ -50,14 +50,14 @@ struct state_definition stm_states_table[] = {
 };
 
 static const struct parser_state_transition parser_command_state[] = {
-        {.when = ' ', .dest = ARGUMENT_1, .act1 = parser_command_state_space},
+        {.when = ' ', .dest = ARGUMENT, .act1 = parser_command_state_space},
         {.when = '\r', .dest = END, .act1 = parser_command_state_carriage_return},
         {.when = ANY, .dest = COMMAND, .act1 = parser_command_state_any}
 };
 
-static const struct parser_state_transition parser_argument_1_state[] = {
-        {.when = '\r', .dest = END, .act1 = parser_argument_1_state_carriage_return},
-        {.when = ANY, .dest = ARGUMENT_1, .act1 = parser_argument_1_state_any}
+static const struct parser_state_transition parser_argument_state[] = {
+        {.when = '\r', .dest = END, .act1 = parser_argument_state_carriage_return},
+        {.when = ANY, .dest = ARGUMENT, .act1 = parser_argument_state_any}
 };
 
 static const struct parser_state_transition parser_end_state[] = {
@@ -67,13 +67,13 @@ static const struct parser_state_transition parser_end_state[] = {
 
 static const struct parser_state_transition * parser_state_table[] = {
         parser_command_state,
-        parser_argument_1_state,
+        parser_argument_state,
         parser_end_state
 };
 
 static const size_t parser_state_n[] = {
         sizeof(parser_command_state) / sizeof(parser_command_state[0]),
-        sizeof(parser_argument_1_state) / sizeof(parser_argument_1_state[0]),
+        sizeof(parser_argument_state) / sizeof(parser_argument_state[0]),
         sizeof(parser_end_state) / sizeof(parser_end_state[0]),
 };
 
@@ -152,7 +152,7 @@ static void handle_write(struct selector_key * key) {
 static void handle_close(struct selector_key * key) {
     connection_data connection = (connection_data) key->data;
 
-    for (int i = 0; i < args.users_count; i++) {
+    for (size_t i = 0; i < args.users_count; i++) {
         if (strcmp(args.users[i].name, connection->current_session.username) == 0) {
             args.users[i].logged_in = false;
         }

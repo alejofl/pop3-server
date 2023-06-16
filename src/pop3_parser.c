@@ -38,7 +38,7 @@ void parser_command_state_carriage_return(struct parser_event * ret, uint8_t c, 
     ret->type = UNDEFINED;
 }
 
-void parser_argument_1_state_any(struct parser_event * ret, uint8_t c, connection_data connection) {
+void parser_argument_state_any(struct parser_event * ret, uint8_t c, connection_data connection) {
     if (connection->current_command.argument_length > ARGUMENT_LENGTH) {
         ret->type = INVALID_COMMAND;
         return;
@@ -48,8 +48,8 @@ void parser_argument_1_state_any(struct parser_event * ret, uint8_t c, connectio
     connection->current_command.argument_length++;
 }
 
-void parser_argument_1_state_carriage_return(struct parser_event * ret, uint8_t c, connection_data connection) {
-    if (connection->current_command.command_length < 0) {
+void parser_argument_state_carriage_return(struct parser_event * ret, uint8_t c, connection_data connection) {
+    if (connection->current_command.argument_length == 0) {
         ret->type = INVALID_COMMAND;
         return;
     }

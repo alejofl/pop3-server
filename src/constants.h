@@ -29,7 +29,7 @@ typedef enum {
 
 typedef enum {
     COMMAND = 0,
-    ARGUMENT_1,
+    ARGUMENT,
     END,
     PARSER_STATES_COUNT
 } parser_states;

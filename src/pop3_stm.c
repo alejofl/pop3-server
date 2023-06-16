@@ -5,6 +5,7 @@
 #include "pop3_commands.h"
 #include <parser.h>
 #include <string.h>
+#include <strings.h>
 #include <stdlib.h>
 #include <dirent.h>
 #include <sys/stat.h>
@@ -58,12 +59,12 @@ stm_states read_command(struct selector_key * key, stm_states current_state) {
     size_t read_bytes;
     ptr = (char *) buffer_read_ptr(&connection->in_buffer_object, &read_bytes);
 
-    for (int i = 0; i < read_bytes; i++) {
+    for (size_t i = 0; i < read_bytes; i++) {
         const struct parser_event * event = parser_feed(connection->parser, ptr[i], connection);
         buffer_read_adv(&connection->in_buffer_object, 1);
 
         if (event->type == VALID_COMMAND) {
-            for (int j = 0; j < pop3_commands_length[current_state]; j++) {
+            for (size_t j = 0; j < pop3_commands_length[current_state]; j++) {
                 struct pop3_command maybe_command = pop3_commands[current_state][j];
                 if (strcasecmp(maybe_command.command, connection->current_command.command) == 0) {
                     if ((maybe_command.argument_type == REQUIRED && connection->current_command.argument_length > 0) ||
@@ -110,7 +111,7 @@ stm_states write_command(struct selector_key * key, stm_states current_state) {
     if (buffer_can_write(&connection->out_buffer_object)) {
         size_t write_bytes;
         ptr = (char *) buffer_write_ptr(&connection->out_buffer_object, &write_bytes);
-        for (int j = 0; j < pop3_commands_length[current_state]; j++) {
+        for (size_t j = 0; j < pop3_commands_length[current_state]; j++) {
             struct pop3_command maybe_command = pop3_commands[current_state][j];
             if (strcasecmp(maybe_command.command, connection->current_command.command) == 0) {
                 stm_states next_state = maybe_command.writer(key, connection, ptr, &write_bytes);
@@ -156,7 +157,7 @@ stm_states stm_authorization_read(struct selector_key * key) {
 stm_states stm_authorization_write(struct selector_key * key) {
     connection_data connection = (connection_data) key->data;
 
-    if (connection->last_state == -1) {
+    if ((int) connection->last_state == -1) {
         bool wrote = greet(connection);
         if (wrote) {
             connection->last_state = AUTHORIZATION;
