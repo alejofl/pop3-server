@@ -54,6 +54,12 @@ struct args {
     size_t users_count;
 };
 
+struct stats {
+    unsigned long historical_connections;
+    unsigned long concurrent_connections;
+    unsigned long transferred_bytes;
+};
+
 struct mail {
     char path[PATH_SIZE];
     bool deleted;

@@ -16,6 +16,7 @@ static void handle_write(struct selector_key * key);
 static void handle_close(struct selector_key * key);
 
 extern struct args args;
+extern struct stats stats;
 
 struct state_definition stm_states_table[] = {
         {
@@ -115,7 +116,10 @@ void accept_pop_connection(struct selector_key * key) {
         free(connection->current_session.mails);
         free(connection);
         close(new_socket_fd);
+        return;
     }
+    stats.concurrent_connections++;
+    stats.historical_connections++;
 }
 
 static void handle_read(struct selector_key * key) {
@@ -131,6 +135,7 @@ static void handle_write(struct selector_key * key) {
     char * ptr = (char *) buffer_read_ptr(&connection->out_buffer_object, &read_bytes);
     ssize_t n = send(key->fd, ptr, read_bytes, 0);
     buffer_read_adv(&connection->out_buffer_object, n);
+    stats.transferred_bytes += n;
 
     if (connection->current_command.finished) {
         if (connection->current_session.requested_quit) {
@@ -157,4 +162,6 @@ static void handle_close(struct selector_key * key) {
     free(connection->current_session.mails);
     free(connection);
     close(key->fd);
+
+    stats.concurrent_connections--;
 }

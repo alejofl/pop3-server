@@ -15,6 +15,7 @@
 
 static bool terminated = false;
 struct args args = {0};
+struct stats stats = {0};
 
 static void sigterm_handler(const int signal) {
     printf("Signal %d received, cleaning up and exiting\n", signal);
