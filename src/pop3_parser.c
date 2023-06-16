@@ -6,10 +6,8 @@
 void clear_parser_buffers(struct command * command) {
     command->command[0] = '\0';
     command->command_length = 0;
-    command->argument_1[0] = '\0';
-    command->argument_1_length = 0;
-    command->argument_2[0] = '\0';
-    command->argument_2_length = 0;
+    command->argument[0] = '\0';
+    command->argument_length = 0;
 }
 
 void parser_command_state_any(struct parser_event * ret, const uint8_t c, connection_data connection) {
@@ -40,23 +38,14 @@ void parser_command_state_carriage_return(struct parser_event * ret, uint8_t c, 
     ret->type = UNDEFINED;
 }
 
-void parser_argument_1_state_space(struct parser_event * ret, uint8_t c, connection_data connection) {
-    if (connection->current_command.command_length < 0) {
-        ret->type = INVALID_COMMAND;
-        return;
-    }
-    connection->current_command.argument_1[connection->current_command.argument_1_length] = '\0';
-    ret->type = UNDEFINED;
-}
-
 void parser_argument_1_state_any(struct parser_event * ret, uint8_t c, connection_data connection) {
-    if (connection->current_command.argument_1_length > ARGUMENT_LENGTH) {
+    if (connection->current_command.argument_length > ARGUMENT_LENGTH) {
         ret->type = INVALID_COMMAND;
         return;
     }
     ret->type = UNDEFINED;
-    connection->current_command.argument_1[connection->current_command.argument_1_length] = (char) c;
-    connection->current_command.argument_1_length++;
+    connection->current_command.argument[connection->current_command.argument_length] = (char) c;
+    connection->current_command.argument_length++;
 }
 
 void parser_argument_1_state_carriage_return(struct parser_event * ret, uint8_t c, connection_data connection) {
@@ -64,27 +53,8 @@ void parser_argument_1_state_carriage_return(struct parser_event * ret, uint8_t 
         ret->type = INVALID_COMMAND;
         return;
     }
-    connection->current_command.argument_1[connection->current_command.argument_1_length] = '\0';
+    connection->current_command.argument[connection->current_command.argument_length] = '\0';
     ret->type = UNDEFINED;
-}
-
-void parser_argument_2_state_carriage_return(struct parser_event * ret, uint8_t c, connection_data connection) {
-    if (connection->current_command.argument_2_length < 0) {
-        ret->type = INVALID_COMMAND;
-        return;
-    }
-    connection->current_command.argument_2[connection->current_command.argument_2_length] = '\0';
-    ret->type = UNDEFINED;
-}
-
-void parser_argument_2_state_any(struct parser_event * ret, uint8_t c, connection_data connection) {
-    if (connection->current_command.argument_2_length > ARGUMENT_LENGTH) {
-        ret->type = INVALID_COMMAND;
-        return;
-    }
-    ret->type = UNDEFINED;
-    connection->current_command.argument_2[connection->current_command.argument_2_length] = (char) c;
-    connection->current_command.argument_2_length++;
 }
 
 void parser_end_state_line_feed(struct parser_event * ret, uint8_t c, connection_data connection) {

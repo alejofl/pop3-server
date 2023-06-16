@@ -9,7 +9,7 @@
 
 #define COMMAND_LENGTH 4
 #define MIN_COMMAND_LENGTH 3
-#define ARGUMENT_LENGTH 254
+#define ARGUMENT_LENGTH 250
 
 #define END_LINE "\r\n"
 #define END_LINE_LENGTH 2
@@ -30,7 +30,6 @@ typedef enum {
 typedef enum {
     COMMAND = 0,
     ARGUMENT_1,
-    ARGUMENT_2,
     END,
     PARSER_STATES_COUNT
 } parser_states;

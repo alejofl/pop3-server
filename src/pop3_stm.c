@@ -13,21 +13,21 @@
 extern struct args args;
 
 struct pop3_command authorization_commands[] = {
-        {.command = "USER", .argument_1_type = REQUIRED, .argument_2_type = EMPTY, .handler = authorization_user, .writer = write_authorization_user},
-        {.command = "PASS", .argument_1_type = REQUIRED, .argument_2_type = EMPTY, .handler = authorization_pass, .writer = write_authorization_pass},
-        {.command = "CAPA", .argument_1_type = EMPTY, .argument_2_type = EMPTY, .handler = authorization_capa, .writer = write_authorization_capa},
-        {.command = "QUIT", .argument_1_type = EMPTY, .argument_2_type = EMPTY, .handler = authorization_quit, .writer = write_authorization_quit},
+        {.command = "USER", .argument_type = REQUIRED, .handler = authorization_user, .writer = write_authorization_user},
+        {.command = "PASS", .argument_type = REQUIRED, .handler = authorization_pass, .writer = write_authorization_pass},
+        {.command = "CAPA", .argument_type = EMPTY, .handler = authorization_capa, .writer = write_authorization_capa},
+        {.command = "QUIT", .argument_type = EMPTY, .handler = authorization_quit, .writer = write_authorization_quit},
 };
 
 struct pop3_command transaction_commands[] = {
-        {.command = "STAT", .argument_1_type = EMPTY, .argument_2_type = EMPTY, .handler = transaction_stat, .writer = write_transaction_stat},
-        {.command = "LIST", .argument_1_type = OPTIONAL, .argument_2_type = EMPTY, .handler = transaction_list, .writer = write_transaction_list},
-        {.command = "RETR", .argument_1_type = REQUIRED, .argument_2_type = EMPTY, .handler = transaction_retr, .writer = write_transaction_retr},
-        {.command = "DELE", .argument_1_type = REQUIRED, .argument_2_type = EMPTY, .handler = transaction_dele, .writer = write_transaction_dele},
-        {.command = "NOOP", .argument_1_type = EMPTY, .argument_2_type = EMPTY, .handler = transaction_noop, .writer = write_transaction_noop},
-        {.command = "RSET", .argument_1_type = EMPTY, .argument_2_type = EMPTY, .handler = transaction_rset, .writer = write_transaction_rset},
-        {.command = "CAPA", .argument_1_type = EMPTY, .argument_2_type = EMPTY, .handler = transaction_capa, .writer = write_transaction_capa},
-        {.command = "QUIT", .argument_1_type = EMPTY, .argument_2_type = EMPTY, .handler = transaction_quit, .writer = write_transaction_quit},
+        {.command = "STAT", .argument_type = EMPTY, .handler = transaction_stat, .writer = write_transaction_stat},
+        {.command = "LIST", .argument_type = OPTIONAL, .handler = transaction_list, .writer = write_transaction_list},
+        {.command = "RETR", .argument_type = REQUIRED, .handler = transaction_retr, .writer = write_transaction_retr},
+        {.command = "DELE", .argument_type = REQUIRED, .handler = transaction_dele, .writer = write_transaction_dele},
+        {.command = "NOOP", .argument_type = EMPTY, .handler = transaction_noop, .writer = write_transaction_noop},
+        {.command = "RSET", .argument_type = EMPTY, .handler = transaction_rset, .writer = write_transaction_rset},
+        {.command = "CAPA", .argument_type = EMPTY, .handler = transaction_capa, .writer = write_transaction_capa},
+        {.command = "QUIT", .argument_type = EMPTY, .handler = transaction_quit, .writer = write_transaction_quit},
 };
 
 struct pop3_command * pop3_commands[] = {
@@ -66,21 +66,14 @@ stm_states read_command(struct selector_key * key, stm_states current_state) {
             for (int j = 0; j < pop3_commands_length[current_state]; j++) {
                 struct pop3_command maybe_command = pop3_commands[current_state][j];
                 if (strcasecmp(maybe_command.command, connection->current_command.command) == 0) {
-                    if ((maybe_command.argument_1_type == REQUIRED && connection->current_command.argument_1_length > 0) ||
-                        (maybe_command.argument_1_type == EMPTY && connection->current_command.argument_1_length == 0) ||
-                        (maybe_command.argument_1_type == OPTIONAL)) {
-                        if ((maybe_command.argument_2_type == REQUIRED && connection->current_command.argument_2_length > 0) ||
-                            (maybe_command.argument_2_type == EMPTY && connection->current_command.argument_2_length == 0) ||
-                            (maybe_command.argument_2_type == OPTIONAL)) {
-                            stm_states next_state = maybe_command.handler(key, connection);
-                            selector_set_interest_key(key, OP_WRITE);
-                            return next_state;
-                        } else {
-                            printf("ERROR EN ARGUMENT 2\n");
-                            return ERROR;
-                        }
+                    if ((maybe_command.argument_type == REQUIRED && connection->current_command.argument_length > 0) ||
+                        (maybe_command.argument_type == EMPTY && connection->current_command.argument_length == 0) ||
+                        (maybe_command.argument_type == OPTIONAL)) {
+                        stm_states next_state = maybe_command.handler(key, connection);
+                        selector_set_interest_key(key, OP_WRITE);
+                        return next_state;
                     } else {
-                        printf("ERROR EN ARGUMENT 1\n");
+                        printf("ERROR EN ARGUMENT\n");
                         return ERROR;
                     }
                 }

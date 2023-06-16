@@ -33,17 +33,17 @@ struct fd_handler mail_file_handler = {
 stm_states authorization_user(struct selector_key * key, connection_data connection) {
     connection->current_command.finished = false;
 
-    if (strlen(connection->current_command.argument_1) > USERNAME_SIZE) {
+    if (strlen(connection->current_command.argument) > USERNAME_SIZE) {
         connection->current_command.error = true;
         return AUTHORIZATION;
     }
 
     for (int i = 0; i < args.users_count; i++) {
-        if (strcmp(args.users[i].name, connection->current_command.argument_1) == 0) {
+        if (strcmp(args.users[i].name, connection->current_command.argument) == 0) {
             connection->current_session.maildir[0] = '\0';
             strcat(connection->current_session.maildir, args.mail_directory);
             strcat(connection->current_session.maildir, "/");
-            strcat(connection->current_session.maildir, connection->current_command.argument_1);
+            strcat(connection->current_session.maildir, connection->current_command.argument);
             strcat(connection->current_session.maildir, "/cur");
             DIR * directory = opendir(connection->current_session.maildir);
             if (directory == NULL) {
@@ -53,7 +53,7 @@ stm_states authorization_user(struct selector_key * key, connection_data connect
             }
             closedir(directory);
 
-            strcpy(connection->current_session.username, connection->current_command.argument_1);
+            strcpy(connection->current_session.username, connection->current_command.argument);
             connection->current_command.error = false;
             return AUTHORIZATION;
         }
@@ -77,7 +77,7 @@ stm_states authorization_pass(struct selector_key * key, connection_data connect
             } else {
                 args.users[i].logged_in = true;
             }
-            error = strcmp(args.users[i].pass, connection->current_command.argument_1) != 0;
+            error = strcmp(args.users[i].pass, connection->current_command.argument) != 0;
             if (error) {
                 connection->current_session.username[0] = '\0';
                 connection->current_session.maildir[0] = '\0';
@@ -118,9 +118,9 @@ stm_states transaction_retr(struct selector_key * key, connection_data connectio
     connection->current_command.crlf_flag = ANY_CHARACTER;
     connection->current_command.sent_title = false;
 
-    if (connection->current_command.argument_1_length > 0) {
+    if (connection->current_command.argument_length > 0) {
         char * end;
-        long argument = strtol(connection->current_command.argument_1, &end, 10);
+        long argument = strtol(connection->current_command.argument, &end, 10);
         if (end[0] != '\0' || argument - 1 >= connection->current_session.mail_count || connection->current_session.mails[argument - 1].deleted) {
             connection->current_command.error = true;
             return TRANSACTION;
@@ -292,9 +292,9 @@ stm_states write_transaction_list(struct selector_key * key, connection_data con
     char * error_message = "-ERR No such message";
     size_t error_message_length = strlen(error_message);
 
-    if (connection->current_command.argument_1_length > 0) {
+    if (connection->current_command.argument_length > 0) {
         char * end;
-        long argument = strtol(connection->current_command.argument_1, &end, 10);
+        long argument = strtol(connection->current_command.argument, &end, 10);
         if (end[0] != '\0' || argument - 1 >= connection->current_session.mail_count) {
             if (error_message_length > *available_space - END_LINE_LENGTH) {
                 return TRANSACTION;
@@ -455,7 +455,7 @@ stm_states write_transaction_dele(struct selector_key * key, connection_data con
     size_t error_message_length = strlen(error_message);
 
     char * end;
-    long argument = strtol(connection->current_command.argument_1, &end, 10);
+    long argument = strtol(connection->current_command.argument, &end, 10);
     if (end[0] != '\0' || argument - 1 >= connection->current_session.mail_count || connection->current_session.mails[argument - 1].deleted == true) {
         if (error_message_length > *available_space - END_LINE_LENGTH) {
             return TRANSACTION;

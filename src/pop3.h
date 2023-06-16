@@ -8,11 +8,9 @@
 
 struct command {
     char command[COMMAND_LENGTH + 1];
-    char argument_1[ARGUMENT_LENGTH + 1];
-    char argument_2[ARGUMENT_LENGTH + 1];
+    char argument[ARGUMENT_LENGTH + 1];
     size_t command_length;
-    size_t argument_1_length;
-    size_t argument_2_length;
+    size_t argument_length;
 
     bool finished;
     bool error;

@@ -54,14 +54,8 @@ static const struct parser_state_transition parser_command_state[] = {
 };
 
 static const struct parser_state_transition parser_argument_1_state[] = {
-        {.when = ' ', .dest = ARGUMENT_2, .act1 = parser_argument_1_state_space},
         {.when = '\r', .dest = END, .act1 = parser_argument_1_state_carriage_return},
         {.when = ANY, .dest = ARGUMENT_1, .act1 = parser_argument_1_state_any}
-};
-
-static const struct parser_state_transition parser_argument_2_state[] = {
-        {.when = '\r', .dest = END, .act1 = parser_argument_2_state_carriage_return},
-        {.when = ANY, .dest = ARGUMENT_2, .act1 = parser_argument_2_state_any}
 };
 
 static const struct parser_state_transition parser_end_state[] = {
@@ -72,14 +66,12 @@ static const struct parser_state_transition parser_end_state[] = {
 static const struct parser_state_transition * parser_state_table[] = {
         parser_command_state,
         parser_argument_1_state,
-        parser_argument_2_state,
         parser_end_state
 };
 
 static const size_t parser_state_n[] = {
         sizeof(parser_command_state) / sizeof(parser_command_state[0]),
         sizeof(parser_argument_1_state) / sizeof(parser_argument_1_state[0]),
-        sizeof(parser_argument_2_state) / sizeof(parser_argument_2_state[0]),
         sizeof(parser_end_state) / sizeof(parser_end_state[0]),
 };
 
