@@ -13,13 +13,14 @@
 #include "pop3/pop3.h"
 #include "selector.h"
 #include "client/client.h"
+#include <logger.h>
 
 static bool terminated = false;
 struct args args = {0};
 struct stats stats = {0};
 
 static void sigterm_handler(const int signal) {
-    printf("Signal %d received, cleaning up and exiting\n", signal);
+    log_info("Signal %d received, cleaning up and exiting", signal);
     terminated = true;
 }
 
@@ -50,6 +51,7 @@ static int setup_ipv4_tcp_socket(unsigned long port) {
         return -1;
     }
 
+    log_info("Set up TCP socket on port %zu", port);
     return server;
 }
 
@@ -81,6 +83,7 @@ static int setup_ipv6_tcp_socket(unsigned long port) {
         return -1;
     }
 
+    log_info("Set up TCP socket on port %zu", port);
     return server;
 }
 
@@ -104,6 +107,7 @@ static int setup_ipv4_udp_socket(unsigned long port) {
         return -1;
     }
 
+    log_info("Set up UPD socket on port %zu", port);
     return client;
 }
 
@@ -129,6 +133,7 @@ static int setup_ipv6_udp_socket(unsigned long port) {
         return -1;
     }
 
+    log_info("Set up UPD socket on port %zu", port);
     return client;
 }
 
@@ -139,18 +144,38 @@ int main(int argc, char** argv) {
     close(STDIN_FILENO);
     char * error_message = NULL;
 
+    int ipv4_server_socket = -1;
+    int ipv6_server_socket = -1;
+    int ipv4_client_socket = -1;
+    int ipv6_client_socket = -1;
+    fd_selector selector = NULL;
+
+    // Initialize selector
+    struct selector_init init_data = {
+            .signal = SIGALRM,
+            .select_timeout = { .tv_sec = 100, .tv_nsec = 0 }
+    };
+    selector_status ss = selector_init(&init_data);
+    if (ss != SELECTOR_SUCCESS) {
+        error_message = "Failed to initialize selector";
+        goto finally;
+    }
+    selector = selector_new(MAX_CONCURRENT_CONNECTIONS);
+    if (selector == NULL) {
+        error_message = "Failed to create selector";
+        goto finally;
+    }
+
+    if (logger_init(selector) < 0) {
+        error_message = "Failed to initialize logger";
+        goto finally;
+    }
+
     // Registering signals to de-allocate resources
     signal(SIGTERM, sigterm_handler);
     signal(SIGINT, sigterm_handler);
 
     parse_args(argc, argv, &args);
-
-    int ipv4_server_socket;
-    int ipv6_server_socket = -1;
-    int ipv4_client_socket = -1;
-    int ipv6_client_socket = -1;
-    selector_status ss = SELECTOR_SUCCESS;
-    fd_selector selector = NULL;
 
     // Initialize the server socket
     ipv4_server_socket = setup_ipv4_tcp_socket(args.server_port);
@@ -171,23 +196,6 @@ int main(int argc, char** argv) {
     ipv6_client_socket = setup_ipv6_udp_socket(args.client_port);
     if (ipv6_client_socket < 0) {
         error_message = "Failed to initialize IPv6 client socket";
-        goto finally;
-    }
-
-    // Initialize selector
-    struct selector_init init_data = {
-            .signal = SIGALRM,
-            .select_timeout = { .tv_sec = 100, .tv_nsec = 0 }
-    };
-    ss = selector_init(&init_data);
-    if (ss != SELECTOR_SUCCESS) {
-        error_message = "Failed to initialize selector";
-        goto finally;
-    }
-
-    selector = selector_new(MAX_CONCURRENT_CONNECTIONS);
-    if (selector == NULL) {
-        error_message = "Failed to create selector";
         goto finally;
     }
 
@@ -240,6 +248,7 @@ int main(int argc, char** argv) {
 
     finally:
         if (ss != SELECTOR_SUCCESS) {
+            log_error("%s: %s\n", (error_message == NULL) ? "" : error_message, ss == SELECTOR_IO ? strerror(errno) : selector_error(ss));
             fprintf(stderr, "%s: %s\n", (error_message == NULL) ? "" : error_message, ss == SELECTOR_IO ? strerror(errno) : selector_error(ss));
             ret = 2;
         } else if (error_message) {

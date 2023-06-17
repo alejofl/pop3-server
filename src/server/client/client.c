@@ -1,12 +1,12 @@
 #include "client.h"
 #include <parser.h>
-#include "../server_constants.h"
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <string.h>
 #include <stdio.h>
 #include "client_parser.h"
 #include "client_commands.h"
+#include "logger.h"
 
 extern struct args args;
 
@@ -82,7 +82,7 @@ void receive_client_directive(struct selector_key * key) {
         return;
     }
 
-    printf("Me llego un mensaje\n");
+    log_info("Received message from client");
 
     struct parser * parser = parser_init(parser_no_classes(), &client_parser_definition);
     struct client_command command = {0};
@@ -117,7 +117,7 @@ void receive_client_directive(struct selector_key * key) {
         }
     }
 
-    printf("%s\n", write_buffer);
+    log_info("Sent message to client");
 
     send:
     sendto(key->fd, write_buffer, strlen(write_buffer), 0, (struct sockaddr *) &client, client_length);

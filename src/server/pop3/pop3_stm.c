@@ -10,6 +10,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include "pop3_parser.h"
+#include "logger.h"
 
 extern struct args args;
 
@@ -45,7 +46,6 @@ stm_states read_command(struct selector_key * key, stm_states current_state) {
     connection_data connection = (connection_data) key->data;
     char * ptr;
 
-    // TODO check if this work with wrtiting.
     if (!buffer_can_read(&connection->in_buffer_object)) {
         size_t write_bytes;
         ptr = (char *) buffer_write_ptr(&connection->in_buffer_object, &write_bytes);
@@ -74,15 +74,15 @@ stm_states read_command(struct selector_key * key, stm_states current_state) {
                         selector_set_interest_key(key, OP_WRITE);
                         return next_state;
                     } else {
-                        printf("ERROR EN ARGUMENT\n");
+                        log_debug("FD %d: Error. Invalid argument", key->fd);
                         return ERROR;
                     }
                 }
             }
-            printf("ERROR COMANDO NO VALIDO PARA EL ESTADO\n");
+            log_debug("FD %d: Error. Invalid command for state", key->fd);
             return ERROR;
         } else if (event->type == INVALID_COMMAND) {
-            printf("ERROR INVALID COMMAND PERO SINTACTICAMENTE\n");
+            log_debug("FD %d: Error. Invalid command", key->fd);
             bool saw_carriage_return = ptr[i] == '\r';
             while (i < read_bytes) {
                 char c = (char) buffer_read(&connection->in_buffer_object);
@@ -248,6 +248,7 @@ stm_states stm_error_write(struct selector_key * key) {
 void stm_quit_arrival(stm_states state, struct selector_key * key) {
     connection_data connection = (connection_data) key->data;
     if (!connection->current_session.requested_quit) {
+        log_debug("FD %d: Abort received", key->fd);
         selector_unregister_fd(key->s, key->fd);
     }
 }

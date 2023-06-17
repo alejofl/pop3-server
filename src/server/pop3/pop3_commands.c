@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include "../server_constants.h"
 #include "pop3_commands.h"
+#include "logger.h"
 
 extern struct args args;
 
@@ -31,6 +32,7 @@ struct fd_handler mail_file_handler = {
 };
 
 stm_states authorization_user(struct selector_key * key, connection_data connection) {
+    log_debug("FD %d: USER", key->fd);
     connection->current_command.finished = false;
 
     if (strlen(connection->current_command.argument) > USERNAME_SIZE) {
@@ -64,6 +66,7 @@ stm_states authorization_user(struct selector_key * key, connection_data connect
 }
 
 stm_states authorization_pass(struct selector_key * key, connection_data connection) {
+    log_debug("FD %d: PASS", key->fd);
     connection->current_command.finished = false;
 
     bool error = true;
@@ -91,21 +94,25 @@ stm_states authorization_pass(struct selector_key * key, connection_data connect
 }
 
 stm_states authorization_capa(struct selector_key * key, connection_data connection) {
+    log_debug("FD %d: CAPA", key->fd);
     connection->current_command.finished = false;
     return AUTHORIZATION;
 }
 
 stm_states authorization_quit(struct selector_key * key, connection_data connection) {
+    log_debug("FD %d: QUIT", key->fd);
     connection->current_command.finished = false;
     return AUTHORIZATION;
 }
 
 stm_states transaction_stat(struct selector_key * key, connection_data connection) {
+    log_debug("FD %d: STAT", key->fd);
     connection->current_command.finished = false;
     return TRANSACTION;
 }
 
 stm_states transaction_list(struct selector_key * key, connection_data connection) {
+    log_debug("FD %d: LIST", key->fd);
     connection->current_command.finished = false;
     connection->current_command.response_index = 0;
     connection->current_command.sent_title = false;
@@ -113,6 +120,7 @@ stm_states transaction_list(struct selector_key * key, connection_data connectio
 }
 
 stm_states transaction_retr(struct selector_key * key, connection_data connection) {
+    log_debug("FD %d: RETR", key->fd);
     connection->current_command.finished = false;
     connection->current_command.error = false;
     connection->current_command.mail_fd = -1;
@@ -147,16 +155,19 @@ stm_states transaction_retr(struct selector_key * key, connection_data connectio
 }
 
 stm_states transaction_dele(struct selector_key * key, connection_data connection) {
+    log_debug("FD %d: DELE", key->fd);
     connection->current_command.finished = false;
     return TRANSACTION;
 }
 
 stm_states transaction_noop(struct selector_key * key, connection_data connection) {
+    log_debug("FD %d: NOOP", key->fd);
     connection->current_command.finished = false;
     return TRANSACTION;
 }
 
 stm_states transaction_rset(struct selector_key * key,connection_data connection) {
+    log_debug("FD %d: RSET", key->fd);
     connection->current_command.finished = false;
     size_t maildir_size = 0;
     for (size_t i = 0; i < connection->current_session.mail_count; i++) {
@@ -168,11 +179,13 @@ stm_states transaction_rset(struct selector_key * key,connection_data connection
 }
 
 stm_states transaction_capa(struct selector_key * key,connection_data connection) {
+    log_debug("FD %d: CAPA", key->fd);
     connection->current_command.finished = false;
     return TRANSACTION;
 }
 
 stm_states transaction_quit(struct selector_key * key,connection_data connection) {
+    log_debug("FD %d: QUIT", key->fd);
     connection->current_command.finished = false;
     connection->current_command.error = false;
     for (size_t i = 0; i < connection->current_session.mail_count; i++) {

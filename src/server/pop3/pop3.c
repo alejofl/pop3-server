@@ -6,10 +6,10 @@
 #include <parser.h>
 #include <string.h>
 
-#include "../server_constants.h"
 #include "pop3.h"
 #include "pop3_stm.h"
 #include "pop3_parser.h"
+#include "logger.h"
 
 static void handle_read(struct selector_key * key);
 static void handle_write(struct selector_key * key);
@@ -120,6 +120,8 @@ void accept_pop_connection(struct selector_key * key) {
     }
     stats.concurrent_connections++;
     stats.historical_connections++;
+
+    log_debug("Opened new POP3 connection");
 }
 
 static void handle_read(struct selector_key * key) {
@@ -134,6 +136,10 @@ static void handle_write(struct selector_key * key) {
     size_t read_bytes;
     char * ptr = (char *) buffer_read_ptr(&connection->out_buffer_object, &read_bytes);
     ssize_t n = send(key->fd, ptr, read_bytes, 0);
+    if (n == -1) {
+        selector_unregister_fd(key->s, key->fd);
+        return;
+    }
     buffer_read_adv(&connection->out_buffer_object, n);
     stats.transferred_bytes += n;
 
@@ -160,8 +166,14 @@ static void handle_close(struct selector_key * key) {
 
     parser_destroy(connection->parser);
     free(connection->current_session.mails);
+    if (connection->current_command.mail_fd != -1) {
+        selector_unregister_fd(key->s, connection->current_command.mail_fd);
+        close(connection->current_command.mail_fd);
+    }
     free(connection);
     close(key->fd);
 
     stats.concurrent_connections--;
+
+    log_debug("Closed POP3 connection");
 }

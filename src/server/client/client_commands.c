@@ -1,5 +1,6 @@
 #include "client_commands.h"
 #include "../server_constants.h"
+#include "logger.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -16,6 +17,8 @@ void write_success(char * buffer, char * content, struct client_command * comman
 }
 
 void add_user(char * buffer, struct client_command * command) {
+    log_debug("Client Request: Add User");
+
     if (args.users_count == MAX_USERS) {
         command->response_code = MAXIMUM_REACHED;
         write_error(buffer, command);
@@ -48,6 +51,8 @@ void add_user(char * buffer, struct client_command * command) {
 }
 
 void change_password(char * buffer, struct client_command * command) {
+    log_debug("Client Request: Change Password");
+
     char * p = strchr(command->content, ':');
     if (p == NULL) {
         command->response_code = GENERIC_ERROR;
@@ -72,6 +77,8 @@ void change_password(char * buffer, struct client_command * command) {
 }
 
 void remove_user(char * buffer, struct client_command * command) {
+    log_debug("Client Request: Remove User");
+
     for (size_t i = 0; i < args.users_count; i++) {
         if (strcmp(command->content, args.users[i].name) == 0) {
             if (args.users[i].logged_in) {
@@ -95,12 +102,16 @@ void remove_user(char * buffer, struct client_command * command) {
 }
 
 void change_directory(char * buffer, struct client_command * command) {
+    log_debug("Client Request: Change Directory");
+
     strcpy(args.mail_directory, command->content);
     command->response_code = ALL_GOOD;
     write_success(buffer, "", command);
 }
 
 void change_max_mails(char * buffer, struct client_command * command) {
+    log_debug("Client Request: Change Max Emails");
+
     char * end;
     int max_mails = (int) strtol(command->content, &end, 10);
     if (max_mails < 1) {
@@ -114,6 +125,8 @@ void change_max_mails(char * buffer, struct client_command * command) {
 }
 
 void get_statistics(char * buffer, struct client_command * command) {
+    log_debug("Client Request: Get Statistics");
+
     char content[CLIENT_CONTENT_LENGTH] = {0};
     sprintf(content, "HC:%zu CC:%zu TB:%zu", stats.historical_connections, stats.concurrent_connections, stats.transferred_bytes);
     command->response_code = ALL_GOOD;
@@ -121,6 +134,8 @@ void get_statistics(char * buffer, struct client_command * command) {
 }
 
 void list_users(char * buffer, struct client_command * command) {
+    log_debug("Client Request: List Users");
+
     char content[CLIENT_CONTENT_LENGTH] = {0};
     size_t content_length = 0;
     for (size_t i = 0; i < args.users_count; i++) {
