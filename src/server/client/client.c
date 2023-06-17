@@ -88,7 +88,7 @@ void receive_client_directive(struct selector_key * key) {
         const struct parser_event * event = parser_feed(parser, read_buffer[i], &command);
         if (event->type == VALID_COMMAND) {
             for (size_t j = 0; j < client_directives_length; j++) {
-                if (client_directives[j].command == read_buffer[i]) {
+                if (client_directives[j].command == command.command) {
                     if ((client_directives[j].content_type == EMPTY && command.content_length == 0) ||
                         (client_directives[j].content_type == REQUIRED && command.content_length > 0)) {
                         client_directives[j].handler(write_buffer, &command);

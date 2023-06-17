@@ -1,0 +1,6 @@
+#ifndef POP3_SERVER_CLIENT_H
+#define POP3_SERVER_CLIENT_H
+
+#define MAX_CLIENT_RESPONSE 8192
+
+#endif

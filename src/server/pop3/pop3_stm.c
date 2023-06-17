@@ -247,8 +247,7 @@ stm_states stm_error_write(struct selector_key * key) {
 
 void stm_quit_arrival(stm_states state, struct selector_key * key) {
     connection_data connection = (connection_data) key->data;
-    connection->current_session.requested_quit = true;
-    if (connection->current_session.requested_quit) {
+    if (!connection->current_session.requested_quit) {
         selector_unregister_fd(key->s, key->fd);
     }
 }

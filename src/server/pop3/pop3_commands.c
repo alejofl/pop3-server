@@ -74,7 +74,7 @@ stm_states authorization_pass(struct selector_key * key, connection_data connect
                 connection->current_command.error = true;
                 connection->current_session.username[0] = '\0';
                 connection->current_session.maildir[0] = '\0';
-                break;
+                return AUTHORIZATION;
             }
             args.users[i].logged_in = true;
             error = strcmp(args.users[i].pass, connection->current_command.argument) != 0;
@@ -264,6 +264,7 @@ stm_states write_authorization_quit(struct selector_key * key, connection_data c
     strncpy(destination + message_length, END_LINE, END_LINE_LENGTH);
     *available_space = message_length + END_LINE_LENGTH;
     connection->current_command.finished = true;
+    connection->current_session.requested_quit = true;
     return QUIT;
 }
 
@@ -545,5 +546,6 @@ stm_states write_transaction_quit(struct selector_key * key, connection_data con
         *available_space = message_length + END_LINE_LENGTH;
     }
     connection->current_command.finished = true;
+    connection->current_session.requested_quit = true;
     return QUIT;
 }
