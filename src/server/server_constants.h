@@ -64,6 +64,7 @@ struct users {
 struct args {
     unsigned short server_port;
     unsigned short client_port;
+    char token[CLIENT_TOKEN_LENGTH + 1];
     char mail_directory[PATH_SIZE];
     size_t max_mails;
     struct users users[MAX_USERS];

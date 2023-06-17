@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <getopt.h>
 #include "args.h"
+#include "server_constants.h"
 
 static unsigned short port(const char * s) {
      char * end = 0;
@@ -48,12 +49,14 @@ usage(const char * progname) {
         "   -h                        Este mensaje de ayuda.\n\n"
         "   --directory <maildir>\n"
         "   -d <maildir>              Path del directorio donde se encotrarán todos los usuarios con sus mails.\n\n"
-        "   --pop3-server_port <pop3 server_port>\n"
-        "   -p <pop3 server_port>            Puerto entrante para conexiones al servidor POP3.\n\n"
-        "   --config-server_port <configuration server_port>\n"
-        "   -P <configuration server_port>   Puerto entrante para conexiones de configuración\n\n"
+        "   --pop3-server-port <pop3 server port>\n"
+        "   -p <pop3 server port>            Puerto entrante para conexiones al servidor POP3.\n\n"
+        "   --config-server-port <configuration server port>\n"
+        "   -P <configuration server port>   Puerto entrante para conexiones de configuración\n\n"
         "   --user\n"
         "   -u <user>:<password>      Usuario y contraseña de usuario que puede usar el servidor POP3. Hasta 10.\n\n"
+        "   --token <token>\n"
+        "   -t <token>                Token de autenticación para el cliente.\n"
         "   --version\n"
         "   -v                        Imprime información sobre la versión.\n"
         "\n",
@@ -78,11 +81,12 @@ void parse_args(const int argc, char **argv, struct args * args) {
             { "pop3-server_port",  required_argument, 0, 'p' },
             { "config-server_port",required_argument, 0, 'P' },
             { "user",       required_argument, 0, 'u' },
+            { "token",       required_argument, 0, 't' },
             { "version",    required_argument, 0, 'v' },
             { 0,            0,                 0, 0 }
         };
 
-        c = getopt_long(argc, argv, "d:p:P:u:v", long_options, &option_index);
+        c = getopt_long(argc, argv, "d:p:P:u:t:v", long_options, &option_index);
         if (c == -1)
             break;
 
@@ -98,6 +102,13 @@ void parse_args(const int argc, char **argv, struct args * args) {
                 break;
             case 'P':
                 args->client_port = port(optarg);
+                break;
+            case 't':
+                if(strlen(optarg) != CLIENT_TOKEN_LENGTH) {
+                    fprintf(stderr, "Token invalid. Must be six alphanumerical characters long: %s.\n", optarg);
+                    exit(1);
+                }
+                strcpy(args->token, optarg);
                 break;
             case 'u':
                 if (args->users_count >= MAX_USERS) {
@@ -116,6 +127,10 @@ void parse_args(const int argc, char **argv, struct args * args) {
                 exit(1);
         }
 
+    }
+    if (args->token[0] == '\0') {
+        fprintf(stderr, "Token argument must be provided.");
+        exit(1);
     }
     if (optind < argc) {
         fprintf(stderr, "Argument not accepted: ");

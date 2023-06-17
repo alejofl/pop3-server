@@ -8,6 +8,8 @@
 #include "client_parser.h"
 #include "client_commands.h"
 
+extern struct args args;
+
 static const struct parser_state_transition client_parser_header_state[] = {
         {.when = '\n', .dest = CLIENT_COMMAND, .act1 = client_parser_header_state_line_feed},
         {.when = ANY, .dest = CLIENT_HEADER, .act1 = client_parser_header_state_any}
@@ -87,6 +89,11 @@ void receive_client_directive(struct selector_key * key) {
     for (ssize_t i = 0; i < n; i++) {
         const struct parser_event * event = parser_feed(parser, read_buffer[i], &command);
         if (event->type == VALID_COMMAND) {
+            if (strcmp(args.token, command.token) != 0) {
+                command.response_code = INVALID_AUTHENTICATION;
+                write_error(write_buffer, &command);
+                goto send;
+            }
             for (size_t j = 0; j < client_directives_length; j++) {
                 if (client_directives[j].command == command.command) {
                     if ((client_directives[j].content_type == EMPTY && command.content_length == 0) ||
