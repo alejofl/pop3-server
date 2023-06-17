@@ -2,8 +2,8 @@
 #define CLIENT_H
 
 #include <selector.h>
-#include "constants.h"
-#include "server_constants.h"
+#include "../../constants.h"
+#include "../server_constants.h"
 
 typedef enum {
     EMPTY,

@@ -1,6 +1,6 @@
 #include "client.h"
 #include <parser.h>
-#include "server_constants.h"
+#include "../server_constants.h"
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <string.h>

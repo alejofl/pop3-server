@@ -7,12 +7,12 @@
 #include <sys/socket.h>  // socket
 #include <netinet/in.h>
 
-#include <args.h>
+#include "args.h"
 
 #include "server_constants.h"
-#include "pop3.h"
+#include "pop3/pop3.h"
 #include "selector.h"
-#include "client.h"
+#include "client/client.h"
 
 static bool terminated = false;
 struct args args = {0};

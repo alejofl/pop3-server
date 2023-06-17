@@ -4,22 +4,22 @@ LDFLAGS=
 
 LIB_HEADERS=src/lib/include
 
-SOURCES=$(wildcard src/lib/*.c) $(wildcard src/*.c)
+SERVER_SOURCES=$(wildcard src/lib/*.c) $(wildcard src/server/*.c) $(wildcard src/server/client/*.c) $(wildcard src/server/pop3/*.c)
 
-OBJECTS=$(SOURCES:src/%.c=obj/%.o)
+SERVER_OBJECTS=$(SERVER_SOURCES:src/%.c=obj/%.o)
 
 OUTPUT_FOLDER=./bin
 OBJECTS_FOLDER=./obj
 
-OUTPUT_FILE=$(OUTPUT_FOLDER)/pop3-server
+SERVER_OUTPUT_FILE=$(OUTPUT_FOLDER)/pop3-server
 
 all: server
 
-server: $(OUTPUT_FILE)
+server: $(SERVER_OUTPUT_FILE)
 
-$(OUTPUT_FILE): $(OBJECTS)
+$(SERVER_OUTPUT_FILE): $(SERVER_OBJECTS)
 	mkdir -p $(@D)
-	$(CC) $(CFLAGS) -I$(LIB_HEADERS) $(LDFLAGS) $(OBJECTS) -o $(OUTPUT_FILE)
+	$(CC) $(CFLAGS) -I$(LIB_HEADERS) $(LDFLAGS) $(SERVER_OBJECTS) -o $(SERVER_OUTPUT_FILE)
 
 obj/%.o: src/%.c
 	mkdir -p $(@D)

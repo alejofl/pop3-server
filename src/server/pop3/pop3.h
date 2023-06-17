@@ -1,10 +1,10 @@
 #ifndef POP3_H
 #define POP3_H
 
-#include "server_constants.h"
-#include <selector.h>
-#include <stm.h>
-#include <buffer.h>
+#include "../server_constants.h"
+#include "selector.h"
+#include "stm.h"
+#include "buffer.h"
 
 struct command {
     char command[COMMAND_LENGTH + 1];

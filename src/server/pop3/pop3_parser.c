@@ -1,6 +1,6 @@
 #include <parser.h>
 #include <stdio.h>
-#include "server_constants.h"
+#include "../server_constants.h"
 #include "pop3_parser.h"
 
 void clear_parser_buffers(struct command * command) {

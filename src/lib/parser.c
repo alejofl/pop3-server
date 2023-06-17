@@ -5,7 +5,7 @@
 #include <stdio.h>
 
 #include "include/parser.h"
-#include "../pop3.h"
+#include "../server/pop3/pop3.h"
 
 /* CDT del parser */
 struct parser {

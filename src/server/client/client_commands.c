@@ -1,5 +1,5 @@
 #include "client_commands.h"
-#include "server_constants.h"
+#include "../server_constants.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

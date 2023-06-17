@@ -12,7 +12,7 @@
  */
 #include <stdint.h>
 #include <stddef.h>
-#include "../../pop3.h"
+#include "../../server/pop3/pop3.h"
 
 /**
  * Evento que retorna el parser.

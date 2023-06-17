@@ -6,7 +6,7 @@
 #include <parser.h>
 #include <string.h>
 
-#include "server_constants.h"
+#include "../server_constants.h"
 #include "pop3.h"
 #include "pop3_stm.h"
 #include "pop3_parser.h"
