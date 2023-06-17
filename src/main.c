@@ -12,6 +12,7 @@
 #include "constants.h"
 #include "pop3.h"
 #include "selector.h"
+#include "client.h"
 
 static bool terminated = false;
 struct args args = {0};
@@ -22,7 +23,7 @@ static void sigterm_handler(const int signal) {
     terminated = true;
 }
 
-static int setup_ipv4_socket(unsigned long port) {
+static int setup_ipv4_tcp_socket(unsigned long port) {
     // Storage for socket address
     struct sockaddr_in address;
     socklen_t address_length = sizeof(address);
@@ -52,7 +53,7 @@ static int setup_ipv4_socket(unsigned long port) {
     return server;
 }
 
-static int setup_ipv6_socket(unsigned long port) {
+static int setup_ipv6_tcp_socket(unsigned long port) {
     // Storage for socket address
     struct sockaddr_in6 address;
     socklen_t address_length = sizeof(address);
@@ -83,6 +84,54 @@ static int setup_ipv6_socket(unsigned long port) {
     return server;
 }
 
+static int setup_ipv4_udp_socket(unsigned long port) {
+    // Storage for socket address
+    struct sockaddr_in address;
+    socklen_t address_length = sizeof(address);
+
+    memset(&address, 0, address_length);
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = htonl(INADDR_ANY);
+    address.sin_port = htons(port);
+
+    int client = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+
+    if (client < 0) {
+        return -1;
+    }
+
+    if (bind(client, (struct sockaddr *) &address, address_length) < 0) {
+        return -1;
+    }
+
+    return client;
+}
+
+static int setup_ipv6_udp_socket(unsigned long port) {
+    // Storage for socket address
+    struct sockaddr_in6 address;
+    socklen_t address_length = sizeof(address);
+
+    memset(&address, 0, address_length);
+    address.sin6_family = AF_INET6;
+    address.sin6_addr = in6addr_any;
+    address.sin6_port = htons(port);
+
+    int client = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+
+    if (client < 0) {
+        return -1;
+    }
+
+    setsockopt(client, IPPROTO_IPV6, IPV6_V6ONLY, &(int){ 1 }, sizeof(int));
+
+    if (bind(client, (struct sockaddr *) &address, address_length) < 0) {
+        return -1;
+    }
+
+    return client;
+}
+
 int main(int argc, char** argv) {
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);
@@ -96,20 +145,32 @@ int main(int argc, char** argv) {
 
     parse_args(argc, argv, &args);
 
-    int ipv4_socket;
-    int ipv6_socket = -1;
+    int ipv4_server_socket;
+    int ipv6_server_socket = -1;
+    int ipv4_client_socket = -1;
+    int ipv6_client_socket = -1;
     selector_status ss = SELECTOR_SUCCESS;
     fd_selector selector = NULL;
 
     // Initialize the server socket
-    ipv4_socket = setup_ipv4_socket(args.port);
-    if (ipv4_socket < 0) {
+    ipv4_server_socket = setup_ipv4_tcp_socket(args.server_port);
+    if (ipv4_server_socket < 0) {
         error_message = "Failed to initialize IPv4 server socket";
         goto finally;
     }
-    ipv6_socket = setup_ipv6_socket(args.port);
-    if (ipv6_socket < 0) {
+    ipv6_server_socket = setup_ipv6_tcp_socket(args.server_port);
+    if (ipv6_server_socket < 0) {
         error_message = "Failed to initialize IPv6 server socket";
+        goto finally;
+    }
+    ipv4_client_socket = setup_ipv4_udp_socket(args.client_port);
+    if (ipv4_client_socket < 0) {
+        error_message = "Failed to initialize IPv4 client socket";
+        goto finally;
+    }
+    ipv6_client_socket = setup_ipv6_udp_socket(args.client_port);
+    if (ipv6_client_socket < 0) {
+        error_message = "Failed to initialize IPv6 client socket";
         goto finally;
     }
 
@@ -138,12 +199,29 @@ int main(int argc, char** argv) {
             .handle_close = NULL
     };
 
-    ss = selector_register(selector, ipv4_socket, &server_handler, OP_READ, NULL);
+    fd_handler client_handler = {
+            .handle_read = receive_client_directive,
+            .handle_write = NULL,
+            .handle_block = NULL,
+            .handle_close = NULL
+    };
+
+    ss = selector_register(selector, ipv4_server_socket, &server_handler, OP_READ, NULL);
     if (ss != SELECTOR_SUCCESS) {
         error_message = "Failed to register IPv4 server socket in selector";
         goto finally;
     }
-    ss = selector_register(selector, ipv6_socket, &server_handler, OP_READ, NULL);
+    ss = selector_register(selector, ipv6_server_socket, &server_handler, OP_READ, NULL);
+    if (ss != SELECTOR_SUCCESS) {
+        error_message = "Failed to register IPv6 server socket in selector";
+        goto finally;
+    }
+    ss = selector_register(selector, ipv4_client_socket, &client_handler, OP_READ, NULL);
+    if (ss != SELECTOR_SUCCESS) {
+        error_message = "Failed to register IPv4 server socket in selector";
+        goto finally;
+    }
+    ss = selector_register(selector, ipv6_client_socket, &client_handler, OP_READ, NULL);
     if (ss != SELECTOR_SUCCESS) {
         error_message = "Failed to register IPv6 server socket in selector";
         goto finally;
@@ -174,11 +252,11 @@ int main(int argc, char** argv) {
         }
         selector_close();
 
-        if (ipv4_socket >= 0) {
-            close(ipv4_socket);
+        if (ipv4_server_socket >= 0) {
+            close(ipv4_server_socket);
         }
-        if (ipv6_socket >= 0) {
-            close(ipv6_socket);
+        if (ipv6_server_socket >= 0) {
+            close(ipv6_server_socket);
         }
 
     return ret;

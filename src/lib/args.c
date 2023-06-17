@@ -48,10 +48,10 @@ usage(const char * progname) {
         "   -h                        Este mensaje de ayuda.\n\n"
         "   --directory <maildir>\n"
         "   -d <maildir>              Path del directorio donde se encotrarán todos los usuarios con sus mails.\n\n"
-        "   --pop3-port <pop3 port>\n"
-        "   -p <pop3 port>            Puerto entrante para conexiones al servidor POP3.\n\n"
-        "   --config-port <configuration port>\n"
-        "   -P <configuration port>   Puerto entrante para conexiones de configuración\n\n"
+        "   --pop3-server_port <pop3 server_port>\n"
+        "   -p <pop3 server_port>            Puerto entrante para conexiones al servidor POP3.\n\n"
+        "   --config-server_port <configuration server_port>\n"
+        "   -P <configuration server_port>   Puerto entrante para conexiones de configuración\n\n"
         "   --user\n"
         "   -u <user>:<password>      Usuario y contraseña de usuario que puede usar el servidor POP3. Hasta 10.\n\n"
         "   --version\n"
@@ -64,7 +64,8 @@ usage(const char * progname) {
 void parse_args(const int argc, char **argv, struct args * args) {
     memset(args, 0, sizeof(*args));
 
-    args->port = 62511;
+    args->server_port = 62511;
+    args->client_port = 62622;
     args->max_mails = INITIAL_MAILS_QTY;
 
     int c;
@@ -74,8 +75,8 @@ void parse_args(const int argc, char **argv, struct args * args) {
         static struct option long_options[] = {
             { "help",       required_argument, 0, 'h' },
             { "directory",  required_argument, 0, 'd' },
-            { "pop3-port",  required_argument, 0, 'p' },
-            { "config-port",required_argument, 0, 'P' },
+            { "pop3-server_port",  required_argument, 0, 'p' },
+            { "config-server_port",required_argument, 0, 'P' },
             { "user",       required_argument, 0, 'u' },
             { "version",    required_argument, 0, 'v' },
             { 0,            0,                 0, 0 }
@@ -93,9 +94,10 @@ void parse_args(const int argc, char **argv, struct args * args) {
                 args->mail_directory = optarg;
                 break;
             case 'p':
-                args->port = port(optarg);
+                args->server_port = port(optarg);
                 break;
             case 'P':
+                args->client_port = port(optarg);
                 break;
             case 'u':
                 if (args->users_count >= MAX_USERS) {

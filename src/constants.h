@@ -19,6 +19,8 @@
 #define PATH_SIZE 4096
 #define INITIAL_MAILS_QTY 64
 
+#define CLIENT_BUFFER_SIZE 8192
+
 typedef enum {
     AUTHORIZATION = 0,
     TRANSACTION,
@@ -47,7 +49,8 @@ struct users {
 };
 
 struct args {
-    unsigned short port;
+    unsigned short server_port;
+    unsigned short client_port;
     char * mail_directory;
     size_t max_mails;
     struct users users[MAX_USERS];
