@@ -59,11 +59,11 @@ static const struct parser_definition client_parser_definition = {
 };
 
 static const struct client_directive client_directives[] = {
-        {.command = 'U', .content_type = EMPTY, .handler = add_user},
-        {.command = 'C', .content_type = EMPTY, .handler = change_password},
-        {.command = 'R', .content_type = EMPTY, .handler = remove_user},
-        {.command = 'D', .content_type = EMPTY, .handler = change_directory},
-        {.command = 'M', .content_type = EMPTY, .handler = change_max_mails},
+        {.command = 'U', .content_type = REQUIRED, .handler = add_user},
+        {.command = 'C', .content_type = REQUIRED, .handler = change_password},
+        {.command = 'R', .content_type = REQUIRED, .handler = remove_user},
+        {.command = 'D', .content_type = REQUIRED, .handler = change_directory},
+        {.command = 'M', .content_type = REQUIRED, .handler = change_max_mails},
         {.command = 'S', .content_type = EMPTY, .handler = get_statistics},
         {.command = 'L', .content_type = EMPTY, .handler = list_users},
 };

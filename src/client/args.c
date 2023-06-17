@@ -20,12 +20,14 @@ static unsigned short port(const char * s) {
 }
 
 static void add_command(char command, char * content, struct command * slot) {
-    if (strlen(content) > CLIENT_CONTENT_LENGTH - 1) {
+    if (content != NULL && strlen(content) > CLIENT_CONTENT_LENGTH - 1) {
         fprintf(stderr, "Content for argument %d must be less than %d characters long.\n", command, CLIENT_CONTENT_LENGTH);
         exit(1);
     }
     slot->command = command;
-    strcpy(slot->content, content);
+    if (content != NULL) {
+        strcpy(slot->content, content);
+    }
 }
 
 static void version(void) {
@@ -75,21 +77,21 @@ void parse_args(const int argc, char **argv, struct args * args) {
     while (true) {
         int option_index = 0;
         static struct option long_options[] = {
-            { "help",       no_argument, 0, 'h' },
-            { "token",       required_argument, 0, 't' },
-            { "port",  required_argument, 0, 'p' },
-            { "directory",  required_argument, 0, 'd' },
-            { "add-user",       required_argument, 0, 'u' },
-            { "change-password",       required_argument, 0, 'c' },
-            { "remove-user",    required_argument, 0, 'r' },
-            { "list-users",    no_argument, 0, 'l' },
-            { "statistics",    no_argument, 0, 's' },
-            { "max-mails",    required_argument, 0, 'm' },
-            { "version",    no_argument, 0, 'v' },
-            { 0,            0,                 0, 0 }
+            { "token",           required_argument, 0, 't' },
+            { "port",            required_argument, 0, 'p' },
+            { "directory",       required_argument, 0, 'd' },
+            { "add-user",        required_argument, 0, 'u' },
+            { "change-password", required_argument, 0, 'c' },
+            { "remove-user",     required_argument, 0, 'r' },
+            { "max-mails",       required_argument, 0, 'm' },
+            { "help",            no_argument,       0, 'h' },
+            { "list-users",      no_argument,       0, 'l' },
+            { "statistics",      no_argument,       0, 's' },
+            { "version",        no_argument,       0, 'v' },
+            { 0,                0,                 0, 0 }
         };
 
-        c = getopt_long(argc, argv, "h:t:p:d:u:c:r:l:s:m:v", long_options, &option_index);
+        c = getopt_long(argc, argv, "ht:p:d:u:c:r:lsm:v", long_options, &option_index);
         if (c == -1)
             break;
 
@@ -111,14 +113,21 @@ void parse_args(const int argc, char **argv, struct args * args) {
             case 'u':
             case 'c':
             case 'r':
-            case 'l':
-            case 's':
             case 'm':
                 if (args->commands_length >= MAX_COMMANDS) {
                     fprintf(stderr, "Maximum arguments reached: %d.\n", MAX_COMMANDS);
                     exit(1);
                 }
                 add_command(c, optarg, &args->commands[args->commands_length]);
+                args->commands_length++;
+                break;
+            case 'l':
+            case 's':
+                if (args->commands_length >= MAX_COMMANDS) {
+                    fprintf(stderr, "Maximum arguments reached: %d.\n", MAX_COMMANDS);
+                    exit(1);
+                }
+                add_command(c, NULL, &args->commands[args->commands_length]);
                 args->commands_length++;
                 break;
             case 'v':
@@ -128,7 +137,6 @@ void parse_args(const int argc, char **argv, struct args * args) {
                 fprintf(stderr, "Unknown argument %d.\n", c);
                 exit(1);
         }
-
     }
     if (args->token[0] == '\0') {
         fprintf(stderr, "Token argument must be provided.");

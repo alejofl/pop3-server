@@ -126,7 +126,8 @@ void list_users(char * buffer, struct client_command * command) {
     for (size_t i = 0; i < args.users_count; i++) {
         strcpy(content + content_length, args.users[i].name);
         content_length += strlen(args.users[i].name);
-
+        strcpy(content + content_length, " ");
+        content_length++;
     }
     command->response_code = ALL_GOOD;
     write_success(buffer, content, command);

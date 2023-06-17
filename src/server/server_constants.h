@@ -1,6 +1,7 @@
 #ifndef SERVER_CONSTANTS_H
 #define SERVER_CONSTANTS_H
 
+#include "../constants.h"
 #include "../lib/include/stm.h"
 
 #define MAX_CONCURRENT_CONNECTIONS 1024

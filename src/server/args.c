@@ -87,7 +87,7 @@ void parse_args(const int argc, char **argv, struct args * args) {
             { 0,            0,                 0, 0 }
         };
 
-        c = getopt_long(argc, argv, "d:p:P:u:t:v", long_options, &option_index);
+        c = getopt_long(argc, argv, "hd:p:P:u:t:v", long_options, &option_index);
         if (c == -1)
             break;
 
