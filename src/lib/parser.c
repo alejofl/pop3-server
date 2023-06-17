@@ -49,7 +49,7 @@ parser_reset(struct parser *p) {
 }
 
 const struct parser_event *
-parser_feed(struct parser *p, const uint8_t c, connection_data connection) {
+parser_feed(struct parser *p, const uint8_t c, void * data) {
 
     const unsigned type = p->classes[c];
 
@@ -73,10 +73,10 @@ parser_feed(struct parser *p, const uint8_t c, connection_data connection) {
 
         // Aca lo que hago es ejecutar la funcion relacionada al caracter que te toco.
         if(matched) {
-            state[i].act1(&p->e1, c, connection);
+            state[i].act1(&p->e1, c, data);
             if(state[i].act2 != NULL) {
                 p->e1.next = &p->e2;
-                state[i].act2(&p->e2, c, connection);
+                state[i].act2(&p->e2, c, data);
             }
             p->state = state[i].dest;
             break;

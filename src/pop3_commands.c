@@ -3,7 +3,7 @@
 #include <dirent.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include "constants.h"
+#include "server_constants.h"
 #include "pop3_commands.h"
 
 extern struct args args;

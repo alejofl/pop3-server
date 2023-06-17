@@ -9,7 +9,7 @@
 
 #include <args.h>
 
-#include "constants.h"
+#include "server_constants.h"
 #include "pop3.h"
 #include "selector.h"
 #include "client.h"

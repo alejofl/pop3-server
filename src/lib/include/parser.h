@@ -37,9 +37,9 @@ struct parser_state_transition {
     /** descriptor del estado destino cuando se cumple la condición */
     unsigned  dest;
     /** acción 1 que se ejecuta cuando la condición es verdadera. requerida. */
-    void    (*act1)(struct parser_event *ret, const uint8_t c, connection_data connection);
+    void    (*act1)(struct parser_event *ret, const uint8_t c, void * data);
     /** otra acción opcional */
-    void    (*act2)(struct parser_event *ret, const uint8_t c, connection_data connection);
+    void    (*act2)(struct parser_event *ret, const uint8_t c, void * data);
 };
 
 /** predicado para utilizar en `when' que retorna siempre true */
@@ -81,7 +81,7 @@ parser_reset    (struct parser *p);
  * capturar los datos se debe clonar.
  */
 const struct parser_event *
-parser_feed     (struct parser *p, const uint8_t c, connection_data data);
+parser_feed     (struct parser *p, const uint8_t c, void * data);
 
 /**
  * En caso de la aplicacion no necesite clases caracteres, se

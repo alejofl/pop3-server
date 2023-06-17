@@ -1,6 +1,6 @@
 #include <parser.h>
 #include <stdio.h>
-#include "constants.h"
+#include "server_constants.h"
 #include "pop3_parser.h"
 
 void clear_parser_buffers(struct command * command) {
@@ -10,7 +10,9 @@ void clear_parser_buffers(struct command * command) {
     command->argument_length = 0;
 }
 
-void parser_command_state_any(struct parser_event * ret, const uint8_t c, connection_data connection) {
+void parser_command_state_any(struct parser_event * ret, const uint8_t c, void * data) {
+    connection_data connection = (connection_data) data;
+
     if (connection->current_command.command_length + 1 > COMMAND_LENGTH) {
         ret->type = INVALID_COMMAND;
         return;
@@ -20,7 +22,9 @@ void parser_command_state_any(struct parser_event * ret, const uint8_t c, connec
     connection->current_command.command_length++;
 }
 
-void parser_command_state_space(struct parser_event * ret, const uint8_t c, connection_data connection) {
+void parser_command_state_space(struct parser_event * ret, const uint8_t c, void * data) {
+    connection_data connection = (connection_data) data;
+
     if (connection->current_command.command_length < MIN_COMMAND_LENGTH) {
         ret->type = INVALID_COMMAND;
         return;
@@ -29,7 +33,9 @@ void parser_command_state_space(struct parser_event * ret, const uint8_t c, conn
     ret->type = UNDEFINED;
 }
 
-void parser_command_state_carriage_return(struct parser_event * ret, uint8_t c, connection_data connection) {
+void parser_command_state_carriage_return(struct parser_event * ret, uint8_t c, void * data) {
+    connection_data connection = (connection_data) data;
+
     if (connection->current_command.command_length < MIN_COMMAND_LENGTH) {
         ret->type = INVALID_COMMAND;
         return;
@@ -38,7 +44,9 @@ void parser_command_state_carriage_return(struct parser_event * ret, uint8_t c, 
     ret->type = UNDEFINED;
 }
 
-void parser_argument_state_any(struct parser_event * ret, uint8_t c, connection_data connection) {
+void parser_argument_state_any(struct parser_event * ret, uint8_t c, void * data) {
+    connection_data connection = (connection_data) data;
+
     if (connection->current_command.argument_length > ARGUMENT_LENGTH) {
         ret->type = INVALID_COMMAND;
         return;
@@ -48,7 +56,9 @@ void parser_argument_state_any(struct parser_event * ret, uint8_t c, connection_
     connection->current_command.argument_length++;
 }
 
-void parser_argument_state_carriage_return(struct parser_event * ret, uint8_t c, connection_data connection) {
+void parser_argument_state_carriage_return(struct parser_event * ret, uint8_t c, void * data) {
+    connection_data connection = (connection_data) data;
+
     if (connection->current_command.argument_length == 0) {
         ret->type = INVALID_COMMAND;
         return;
@@ -57,10 +67,10 @@ void parser_argument_state_carriage_return(struct parser_event * ret, uint8_t c,
     ret->type = UNDEFINED;
 }
 
-void parser_end_state_line_feed(struct parser_event * ret, uint8_t c, connection_data connection) {
+void parser_end_state_line_feed(struct parser_event * ret, uint8_t c, void * data) {
     ret->type = VALID_COMMAND;
 }
 
-void parser_end_state_any(struct parser_event * ret, uint8_t c, connection_data connection) {
+void parser_end_state_any(struct parser_event * ret, uint8_t c, void * data) {
     ret->type = INVALID_COMMAND;
 }

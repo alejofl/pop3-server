@@ -27,8 +27,8 @@ static void user(char * s, struct users * user) {
     } else {
         *p = '\0';
         p++;
-        user->name = s;
-        user->pass = p;
+        strcpy(user->name, s);
+        strcpy(user->pass, p);
     }
 
 }
@@ -91,7 +91,7 @@ void parse_args(const int argc, char **argv, struct args * args) {
                 usage(argv[0]);
                 break;
             case 'd':
-                args->mail_directory = optarg;
+                strcpy(args->mail_directory, optarg);
                 break;
             case 'p':
                 args->server_port = port(optarg);

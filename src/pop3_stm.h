@@ -2,7 +2,7 @@
 #define POP3_STM_H
 
 #include <selector.h>
-#include "constants.h"
+#include "server_constants.h"
 #include "pop3.h"
 
 typedef enum {

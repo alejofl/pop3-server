@@ -1,7 +1,7 @@
 #ifndef POP3_COMMANDS_H
 #define POP3_COMMANDS_H
 
-#include "constants.h"
+#include "server_constants.h"
 #include "pop3.h"
 
 stm_states authorization_user(struct selector_key * key, connection_data connection);

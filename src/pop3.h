@@ -1,7 +1,7 @@
 #ifndef POP3_H
 #define POP3_H
 
-#include "constants.h"
+#include "server_constants.h"
 #include <selector.h>
 #include <stm.h>
 #include <buffer.h>
