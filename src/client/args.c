@@ -5,8 +5,6 @@
 #include <errno.h>
 #include <getopt.h>
 #include "args.h"
-#include "server_constants.h"
-#include "../constants.h"
 
 static unsigned short port(const char * s) {
      char * end = 0;
@@ -21,24 +19,18 @@ static unsigned short port(const char * s) {
      return (unsigned short) sl;
 }
 
-static void user(char * s, struct users * user) {
-    char * p = strchr(s, ':');
-    if (p == NULL) {
-        fprintf(stderr, "Password not found\n");
+static void add_command(char command, char * content, struct command * slot) {
+    if (strlen(content) > CLIENT_CONTENT_LENGTH - 1) {
+        fprintf(stderr, "Content for argument %d must be less than %d characters long.\n", command, CLIENT_CONTENT_LENGTH);
         exit(1);
-    } else {
-        *p = '\0';
-        p++;
-        strcpy(user->name, s);
-        strcpy(user->pass, p);
     }
-
+    slot->command = command;
+    strcpy(slot->content, content);
 }
 
 static void version(void) {
-    fprintf(stderr, "POP3 Server v4.20\n"
-                    "ITBA - Protocolos de Comunicación 20231Q -- Grupo 4\n"
-                    "AQUI VA LA LICENCIA\n");
+    fprintf(stderr, "Turtle Client - Turtle Protocol v1\n"
+                    "ITBA - Protocolos de Comunicación 20231Q -- Grupo 4\n");
 }
 
 static void
@@ -48,16 +40,24 @@ usage(const char * progname) {
         "\n"
         "   --help\n"
         "   -h                        Este mensaje de ayuda.\n\n"
+        "   --token <token>\n"
+        "   -t <token>                Token de autenticación para el cliente.\n\n"
+        "   --port <server port>\n"
+        "   -p <server port>           Puerto para conexiones al servidor POP3 a administrar.\n\n"
         "   --directory <maildir>\n"
         "   -d <maildir>              Path del directorio donde se encotrarán todos los usuarios con sus mails.\n\n"
-        "   --pop3-server-port <pop3 server port>\n"
-        "   -p <pop3 server port>            Puerto entrante para conexiones al servidor POP3.\n\n"
-        "   --config-server-port <configuration server port>\n"
-        "   -P <configuration server port>   Puerto entrante para conexiones de configuración\n\n"
-        "   --user\n"
+        "   --add-user <user>:<password>\n"
         "   -u <user>:<password>      Usuario y contraseña de usuario que puede usar el servidor POP3. Hasta 10.\n\n"
-        "   --token <token>\n"
-        "   -t <token>                Token de autenticación para el cliente.\n"
+        "   --change-password <user>:<password>\n"
+        "   -c <user>:<password>      Cambiar contraseña para el usuario especificado.\n\n"
+        "   --remove-user <user>\n"
+        "   -r <user>                 Eliminar usuario del servidor POP3.\n\n"
+        "   --list-users\n"
+        "   -l                        Listar los usuarios del servidor POP3.\n\n"
+        "   --statistics\n"
+        "   -s                        Obtener las estadísticas del servidor POP3.\n\n"
+        "   --max-mails <number>\n"
+        "   -m <number>               Cambiar el máximo número de mails.\n\n"
         "   --version\n"
         "   -v                        Imprime información sobre la versión.\n"
         "\n",
@@ -68,9 +68,7 @@ usage(const char * progname) {
 void parse_args(const int argc, char **argv, struct args * args) {
     memset(args, 0, sizeof(*args));
 
-    args->server_port = 62511;
-    args->client_port = 62622;
-    args->max_mails = INITIAL_MAILS_QTY;
+    args->port = 62622;
 
     int c;
 
@@ -78,31 +76,26 @@ void parse_args(const int argc, char **argv, struct args * args) {
         int option_index = 0;
         static struct option long_options[] = {
             { "help",       no_argument, 0, 'h' },
-            { "directory",  required_argument, 0, 'd' },
-            { "pop3-server_port",  required_argument, 0, 'p' },
-            { "config-server_port",required_argument, 0, 'P' },
-            { "user",       required_argument, 0, 'u' },
             { "token",       required_argument, 0, 't' },
+            { "port",  required_argument, 0, 'p' },
+            { "directory",  required_argument, 0, 'd' },
+            { "add-user",       required_argument, 0, 'u' },
+            { "change-password",       required_argument, 0, 'c' },
+            { "remove-user",    required_argument, 0, 'r' },
+            { "list-users",    no_argument, 0, 'l' },
+            { "statistics",    no_argument, 0, 's' },
+            { "max-mails",    required_argument, 0, 'm' },
             { "version",    no_argument, 0, 'v' },
             { 0,            0,                 0, 0 }
         };
 
-        c = getopt_long(argc, argv, "d:p:P:u:t:v", long_options, &option_index);
+        c = getopt_long(argc, argv, "h:t:p:d:u:c:r:l:s:m:v", long_options, &option_index);
         if (c == -1)
             break;
 
         switch (c) {
             case 'h':
                 usage(argv[0]);
-                break;
-            case 'd':
-                strcpy(args->mail_directory, optarg);
-                break;
-            case 'p':
-                args->server_port = port(optarg);
-                break;
-            case 'P':
-                args->client_port = port(optarg);
                 break;
             case 't':
                 if(strlen(optarg) != CLIENT_TOKEN_LENGTH) {
@@ -111,14 +104,22 @@ void parse_args(const int argc, char **argv, struct args * args) {
                 }
                 strcpy(args->token, optarg);
                 break;
+            case 'p':
+                args->port = port(optarg);
+                break;
+            case 'd':
             case 'u':
-                if (args->users_count >= MAX_USERS) {
-                    fprintf(stderr, "Maximum number of command line users reached: %d.\n", MAX_USERS);
+            case 'c':
+            case 'r':
+            case 'l':
+            case 's':
+            case 'm':
+                if (args->commands_length >= MAX_COMMANDS) {
+                    fprintf(stderr, "Maximum arguments reached: %d.\n", MAX_COMMANDS);
                     exit(1);
-                } else {
-                    user(optarg, &args->users[args->users_count]);
-                    args->users_count++;
                 }
+                add_command(c, optarg, &args->commands[args->commands_length]);
+                args->commands_length++;
                 break;
             case 'v':
                 version();
