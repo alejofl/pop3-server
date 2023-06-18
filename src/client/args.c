@@ -31,8 +31,28 @@ static void add_command(char command, char * content, struct command * slot) {
 }
 
 static void version(void) {
-    fprintf(stderr, "Turtle Client - Turtle Protocol v1\n"
-                    "ITBA - Protocolos de Comunicación 20231Q -- Grupo 4\n");
+    fprintf(
+            stdout,
+            "                                    ___-------___\n"\
+            "                                _-~~             ~~-_\n"\
+            "                             _-~                    /~-_\n"\
+            "          /^\\__/^\\         /~  \\                   /    \\\n"\
+            "        /|  O|| O|        /      \\_______________/        \\\n"\
+            "       | |___||__|      /       /                \\          \\\n"\
+            "       |          \\    /      /                    \\          \\\n"\
+            "       |   (_______) /______/                        \\_________ \\\n"\
+            "       |         / /         \\                      /            \\\n"\
+            "        \\         \\^\\\\         \\                  /               \\     /\n"\
+            "          \\         ||           \\______________/      _-_       //\\__//\n"\
+            "            \\       ||------_-~~-_ ------------- \\ --/~   ~\\    || __/\n"\
+            "              ~-----||====/~     |==================|       |/~~~~~\n"\
+            "               (_(__/  ./     /                    \\_\\      \\.\n"\
+            "                      (_(___/                         \\_____)_)\n"
+            "Turtle Client v1.0\n"
+            "Implementa Turtle Protocol v1\n"
+            "ITBA - 72.07 Protocolos de Comunicación 20231Q -- Grupo 4\n"
+            "Alejo Flores Lucey | Andrés Carro Wetzel | Nehuén Gabriel Llanos\n\n");
+    exit(0);
 }
 
 static void
@@ -41,27 +61,27 @@ usage(const char * progname) {
         "Usage: %s [OPTION]...\n"
         "\n"
         "   --help\n"
-        "   -h                        Este mensaje de ayuda.\n\n"
+        "   -h                        Help message.\n\n"
         "   --token <token>\n"
-        "   -t <token>                Token de autenticación para el cliente.\n\n"
+        "   -t <token>                Authentication token for client.\n\n"
         "   --port <server port>\n"
-        "   -p <server port>           Puerto para conexiones al servidor POP3 a administrar.\n\n"
+        "   -p <server port>          POP3 server port connection.\n\n"
         "   --directory <maildir>\n"
-        "   -d <maildir>              Path del directorio donde se encotrarán todos los usuarios con sus mails.\n\n"
+        "   -d <maildir>              Path of the directory where all the users with their emails will be located.\n\n"
         "   --add-user <user>:<password>\n"
-        "   -u <user>:<password>      Usuario y contraseña de usuario que puede usar el servidor POP3. Hasta 10.\n\n"
+        "   -u <user>:<password>      Username and password of a user that can use the POP3 server. Up to 10.\n\n"
         "   --change-password <user>:<password>\n"
-        "   -c <user>:<password>      Cambiar contraseña para el usuario especificado.\n\n"
+        "   -c <user>:<password>      Change password for the specified user.\n\n"
         "   --remove-user <user>\n"
-        "   -r <user>                 Eliminar usuario del servidor POP3.\n\n"
+        "   -r <user>                 Delete user from the POP3 server.\n\n"
         "   --list-users\n"
-        "   -l                        Listar los usuarios del servidor POP3.\n\n"
+        "   -l                        List the users of the POP3 server.\n\n"
         "   --statistics\n"
-        "   -s                        Obtener las estadísticas del servidor POP3.\n\n"
+        "   -s                        Retrieve the statistics of the POP3 server.\n\n"
         "   --max-mails <number>\n"
-        "   -m <number>               Cambiar el máximo número de mails.\n\n"
+        "   -m <number>               Change the maximum number of emails.\n\n"
         "   --version\n"
-        "   -v                        Imprime información sobre la versión.\n"
+        "   -v                        Print information about the version.\n"
         "\n",
         progname);
     exit(1);
@@ -70,7 +90,7 @@ usage(const char * progname) {
 void parse_args(const int argc, char **argv, struct args * args) {
     memset(args, 0, sizeof(*args));
 
-    args->port = 62622;
+    args->port = CLIENT_PORT;
 
     int c;
 
@@ -78,7 +98,7 @@ void parse_args(const int argc, char **argv, struct args * args) {
         int option_index = 0;
         static struct option long_options[] = {
             { "token",           required_argument, 0, 't' },
-            { "port",            required_argument, 0, 'p' },
+            { "port",            required_argument, 0, 'P' },
             { "directory",       required_argument, 0, 'd' },
             { "add-user",        required_argument, 0, 'u' },
             { "change-password", required_argument, 0, 'c' },
@@ -91,7 +111,7 @@ void parse_args(const int argc, char **argv, struct args * args) {
             { 0,                0,                 0, 0 }
         };
 
-        c = getopt_long(argc, argv, "ht:p:d:u:c:r:lsm:v", long_options, &option_index);
+        c = getopt_long(argc, argv, "ht:P:d:u:c:r:lsm:v", long_options, &option_index);
         if (c == -1)
             break;
 
@@ -106,7 +126,7 @@ void parse_args(const int argc, char **argv, struct args * args) {
                 }
                 strcpy(args->token, optarg);
                 break;
-            case 'p':
+            case 'P':
                 args->port = port(optarg);
                 break;
             case 'd':
@@ -139,7 +159,7 @@ void parse_args(const int argc, char **argv, struct args * args) {
         }
     }
     if (args->token[0] == '\0') {
-        fprintf(stderr, "Token argument must be provided.");
+        fprintf(stderr, "Token argument must be provided.\n");
         exit(1);
     }
     if (optind < argc) {

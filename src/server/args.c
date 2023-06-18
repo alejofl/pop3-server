@@ -36,30 +36,49 @@ static void user(char * s, struct users * user) {
 }
 
 static void version(void) {
-    fprintf(stderr, "POP3 Server v4.20\n"
-                    "ITBA - Protocolos de Comunicación 20231Q -- Grupo 4\n"
-                    "AQUI VA LA LICENCIA\n");
+    fprintf(
+            stdout,
+            "                                    ___-------___\n"\
+            "                                _-~~             ~~-_\n"\
+            "                             _-~                    /~-_\n"\
+            "          /^\\__/^\\         /~  \\                   /    \\\n"\
+            "        /|  O|| O|        /      \\_______________/        \\\n"\
+            "       | |___||__|      /       /                \\          \\\n"\
+            "       |          \\    /      /                    \\          \\\n"\
+            "       |   (_______) /______/                        \\_________ \\\n"\
+            "       |         / /         \\                      /            \\\n"\
+            "        \\         \\^\\\\         \\                  /               \\     /\n"\
+            "          \\         ||           \\______________/      _-_       //\\__//\n"\
+            "            \\       ||------_-~~-_ ------------- \\ --/~   ~\\    || __/\n"\
+            "              ~-----||====/~     |==================|       |/~~~~~\n"\
+            "               (_(__/  ./     /                    \\_\\      \\.\n"\
+            "                      (_(___/                         \\_____)_)\n"
+            "Turtle POP3 Server v1.0\n"
+            "Implementa Turtle Protocol v1\n"
+            "ITBA - 72.07 Protocolos de Comunicación 20231Q -- Grupo 4\n"
+            "Alejo Flores Lucey | Andrés Carro Wetzel | Nehuén Gabriel Llanos\n\n");
+    exit(0);
 }
 
 static void
 usage(const char * progname) {
     fprintf(stderr,
-        "Usage: %s [OPTION]...\n"
+        "Usage: %s [OPTIONS]...\n"
         "\n"
         "   --help\n"
-        "   -h                        Este mensaje de ayuda.\n\n"
+        "   -h                               This help message.\n\n"
         "   --directory <maildir>\n"
-        "   -d <maildir>              Path del directorio donde se encotrarán todos los usuarios con sus mails.\n\n"
+        "   -d <maildir>                     Path to directory where it'll find all users with their mails.\n\n"
         "   --pop3-server-port <pop3 server port>\n"
-        "   -p <pop3 server port>            Puerto entrante para conexiones al servidor POP3.\n\n"
+        "   -p <pop3 server port>            Port for POP3 server connections.\n\n"
         "   --config-server-port <configuration server port>\n"
-        "   -P <configuration server port>   Puerto entrante para conexiones de configuración\n\n"
-        "   --user\n"
-        "   -u <user>:<password>      Usuario y contraseña de usuario que puede usar el servidor POP3. Hasta 10.\n\n"
+        "   -P <configuration server port>   Port for configuration client connections\n\n"
+        "   --user <user>:<password>\n"
+        "   -u <user>:<password>             User and password for a user which can use the POP3 server. Up to 10.\n\n"
         "   --token <token>\n"
-        "   -t <token>                Token de autenticación para el cliente.\n"
+        "   -t <token>                       Authentication token for the client.\n\n"
         "   --version\n"
-        "   -v                        Imprime información sobre la versión.\n"
+        "   -v                               Prints version information.\n"
         "\n",
         progname);
     exit(1);
@@ -68,8 +87,8 @@ usage(const char * progname) {
 void parse_args(const int argc, char **argv, struct args * args) {
     memset(args, 0, sizeof(*args));
 
-    args->server_port = 62511;
-    args->client_port = 62622;
+    args->server_port = SERVER_PORT;
+    args->client_port = CLIENT_PORT;
     args->max_mails = INITIAL_MAILS_QTY;
 
     int c;
@@ -77,14 +96,14 @@ void parse_args(const int argc, char **argv, struct args * args) {
     while (true) {
         int option_index = 0;
         static struct option long_options[] = {
-            { "help",       no_argument, 0, 'h' },
-            { "directory",  required_argument, 0, 'd' },
-            { "pop3-server_port",  required_argument, 0, 'p' },
-            { "config-server_port",required_argument, 0, 'P' },
-            { "user",       required_argument, 0, 'u' },
-            { "token",       required_argument, 0, 't' },
-            { "version",    no_argument, 0, 'v' },
-            { 0,            0,                 0, 0 }
+            { "help",              no_argument,       0, 'h' },
+            { "directory",         required_argument, 0, 'd' },
+            { "pop3-server-port",  required_argument, 0, 'p' },
+            { "config-server-port",required_argument, 0, 'P' },
+            { "user",              required_argument, 0, 'u' },
+            { "token",             required_argument, 0, 't' },
+            { "version",           no_argument,       0, 'v' },
+            { 0,                   0,                 0, 0 }
         };
 
         c = getopt_long(argc, argv, "hd:p:P:u:t:v", long_options, &option_index);
@@ -130,7 +149,11 @@ void parse_args(const int argc, char **argv, struct args * args) {
 
     }
     if (args->token[0] == '\0') {
-        fprintf(stderr, "Token argument must be provided.");
+        fprintf(stderr, "Token argument must be provided.\n");
+        exit(1);
+    }
+    if (args->mail_directory[0] == '\0') {
+        fprintf(stderr, "Mail directory argument must be provided.\n");
         exit(1);
     }
     if (optind < argc) {

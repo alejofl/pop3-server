@@ -93,7 +93,9 @@ int main(int argc, char * argv[]) {
         int k = sscanf(response, "%d %d\n%[^\n]\n", &status, &id, content);
 
         if (k < 2 || (k == 2 && args.commands[i].command == 's') || (k == 2 && args.commands[i].command == 'l')) {
-            printf("%s: Invalid response %d\n\n", command_description[command_identifier], k);
+            if (status == 10) {
+                printf("%s: Invalid response\n\n", command_description[command_identifier]);
+            }
         }
 
         if (id != (int) i) {
