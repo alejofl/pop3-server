@@ -11,7 +11,7 @@
 Para la creación de los ejecutables necesarios del proyecto basta con posicionarse en la carpeta raíz del mismo y ejecutar el comando `make all`. De esta manera se crearán dos ejecutables, `turtle-client` y `turtle-pop3` en la carpeta `./bin`.
 
 ```
-make all
+$$ make all
 ```
 
 ## Utilización del directorio de mails
